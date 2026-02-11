@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Triple Extractor MVP</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            margin-top: 10px;
+            padding: 10px;
+            font-family: monospace;
+        }
+
+        .container {
+            display: grid;
+            gap: 20px;
+        }
+
+        .row {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: 1fr 1fr;
+        }
+
+        button {
+            padding: 10px 15px;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        h2 {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Ontology Triple Extractor Version 1.0</h1>
+
+    <form method="POST">
+
+        <div class="container">
+
+            <div>
+                <h2>Input Text</h2>
+                <textarea name="input_text" placeholder="Paste regulatory text here">{{ input_text }}</textarea>
+                <button type="submit">Generate</button>
+            </div>
+
+            <div class="row">
+                <div>
+                    <h2>QuickStatements Output</h2>
+                    <textarea readonly>{{ qs_output }}</textarea>
+                </div>
+
+                <div>
+                    <h2>Explain / Evidence</h2>
+                    <textarea readonly>{{ explain_output }}</textarea>
+                </div>
+            </div>
+
+        </div>
+
+    </form>
+
+</body>
+</html>
