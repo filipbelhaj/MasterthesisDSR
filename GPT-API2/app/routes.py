@@ -16,15 +16,12 @@ def to_quickstatements(additions) -> str:
         lines.append("\t".join(row))
     return "\n".join(lines)
 
-
 def reasons_text(reasons) -> str:
     return "\n".join(f"- {r}" for r in reasons if str(r).strip())
-
 
 @bp.get("/")
 def ui():
     return send_from_directory(BASE_DIR, "index.html")
-
 
 @bp.post("/api/extract")
 def api_extract():
@@ -43,8 +40,3 @@ def api_extract():
         )
     except Exception as e:
         return jsonify(error=str(e)), 500
-
-
-@bp.get("/health")
-def health():
-    return jsonify(ok=True)
