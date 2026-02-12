@@ -3,11 +3,9 @@ import json
 from typing import List, Tuple
 import numpy as np
 from openai import OpenAI
-
 from .config import EMBEDDING_MODEL, EXTRACTOR_MODEL, KB_PATH, TOPK, get_client
 from .kb import build_label_maps, fix_labels, load_kb, row_key
 from .prompts import extraction_instructions, kb_additions_schema
-
 
 def embed_texts(
     client: OpenAI,
@@ -32,7 +30,6 @@ def embed_texts(
     norms = np.linalg.norm(E, axis=1, keepdims=True) + 1e-12
     return E / norms
 
-
 def retrieve_kb_context(section_text: str, kb: list, client: OpenAI) -> list:
     """Simple embedding retrieval over existing KB labels."""
     if not kb:
@@ -52,7 +49,6 @@ def retrieve_kb_context(section_text: str, kb: list, client: OpenAI) -> list:
     scores = kb_emb @ q
     top_idx = np.argsort(-scores)[: min(TOPK, len(kb))]
     return [kb[int(i)] for i in top_idx]
-
 
 def connect_section(section_text: str) -> Tuple[List[dict], List[str]]:
     """
