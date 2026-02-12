@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
 
-# Each row is a dict from JSON
 def load_kb(path: Path) -> list[dict]:
     if not path.exists():
         raise FileNotFoundError(f"KB file not found at {path}. Expected query.json next to api.py.")
@@ -10,12 +9,10 @@ def load_kb(path: Path) -> list[dict]:
         raise ValueError("query.json must be a list of objects")
     return kb
 
-
 def row_key(r: dict) -> tuple[str, str, str, str, str]:
     """Dedup key for a KB row (including optional qualifier)."""
     keys = ("item", "property", "value", "qualifierProperty", "qualifierValue")
     return tuple((r.get(k) or "") for k in keys)
-
 
 def build_label_maps(kb) -> tuple[dict, dict, dict]:
     """Build canonical label maps from existing KB rows."""
@@ -28,7 +25,6 @@ def build_label_maps(kb) -> tuple[dict, dict, dict]:
         if r.get("value") and r.get("valueLabel"):
             value_label[r["value"]] = r["valueLabel"]
     return item_label, prop_label, value_label
-
 
 def fix_labels(add: dict, item_label: dict, prop_label: dict, value_label: dict) -> dict:
     """For URIs already in KB, force canonical labels from KB."""
@@ -43,4 +39,3 @@ def fix_labels(add: dict, item_label: dict, prop_label: dict, value_label: dict)
     set_label("qualifierProperty", "qualifierPropertyLabel", prop_label)
     set_label("qualifierValue", "qualifierValueLabel", value_label)
     return add
-
