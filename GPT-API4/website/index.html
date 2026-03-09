@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TriExtract</title>
+  <link rel="stylesheet" href="/website/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <h1>TriExtract</h1>
+    <div class="toolbar">
+      <div class="toolbar-row">
+        <button id="generate_btn" type="button">Generate Proposal</button>
+        <button id="approve_btn" type="button" class="success" disabled>Append</button>
+        <button id="finalize_btn" type="button" class="warn" disabled>Finalize</button>
+        <button id="clear_session_btn" type="button" class="secondary">Clear Local Session</button>
+      </div>
+
+      <div id="status" class="status"></div>
+
+      <div class="meta">
+        <div class="chip"><b>Last Action</b><span id="action_meta">—</span></div>
+        <div class="chip"><b>Total Objects Created</b><span id="objects_meta">0</span></div>
+        <div class="chip"><b>Total Relations Created</b><span id="relations_meta">0</span></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Input Text</h2>
+        <div class="help">Paste legal/regulatory text to extract triples.</div>
+        <textarea id="input_text"></textarea>
+      </div>
+
+      <div class="panel">
+        <h2>Reasoning / Evidence (Review)</h2>
+        <div class="help">Review this before clicking append.</div>
+        <textarea id="explain_output" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="panel mt-16">
+      <h2>Proposed Wikibase changes</h2>
+      <div class="help">This box is editable. Apply the changes you want before pressing append.</div>
+      <textarea id="qs_output"></textarea>
+    </div>
+
+    <div class="panel mt-16">
+      <h2>Knowledge Graph Preview</h2>
+      <div class="toolbar-row mb-8">
+        <label>
+          <input id="showNewContextToggle" type="checkbox" checked />
+          Click to see full graph with new changes.
+        </label>
+        <button id="resetViewBtn" type="button" class="secondary">Reset View</button>
+      </div>
+      <div id="kgHint" class="help">Visible: 0 nodes, 0 edges.</div>
+      <div class="graph-legend" aria-label="Graph legend">
+        <span class="legend-item"><span class="legend-dot legend-old-node"></span>Existing node</span>
+        <span class="legend-item"><span class="legend-dot legend-new-node"></span>New node</span>
+        <span class="legend-item"><span class="legend-line legend-old-edge"></span>Existing edge</span>
+        <span class="legend-item"><span class="legend-line legend-new-edge"></span>New edge</span>
+      </div>
+      <div id="cy"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+  <script src="/website/graph.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const inputEl = $('input_text');
+    const qsEl = $('qs_output');
+    const explainEl = $('explain_output');
+    const statusEl = $('status');
+    const actionMetaEl = $('action_meta');
+    const objectsMetaEl = $('objects_meta');
+    const relationsMetaEl = $('relations_meta');
+    const generateBtn = $('generate_btn');
+    const approveBtn = $('approve_btn');
+    const finalizeBtn = $('finalize_btn');
+    const clearSessionBtn = $('clear_session_btn');
+    const showNewContextToggle = $("showNewContextToggle");
+    const resetViewBtn = $("resetViewBtn");
+    const kgHint = $("kgHint");
+
+    let cy = null;
+    let graphOldRows = [];
+    let graphNewRows = [];
+    const renderSharedGraph = window.TriExtractGraph?.renderGraph;
+    function updateHint() {
+      if (!kgHint || !cy) return;
+      kgHint.textContent = `Visible: ${cy.nodes(":visible").length} nodes, ${cy.edges(":visible").length} edges.`;
+    }
+
+    function applyNewPlus1HopFilter(enabled) {
+      if (!cy) return;
+
+      if (!enabled) {
+        cy.elements().removeClass("cy-hidden");
+        cy.fit(cy.elements(), 20);
+        return updateHint();
+      }
+
+      const newEdges = cy.edges('[status="new"]');
+      const endpoints = newEdges.connectedNodes();
+      const newNodes = cy.nodes('[status="new"]');
+      const existingEdgesOnNewNodes = newNodes.connectedEdges('[status="existing"]');
+      const visible = newEdges.union(endpoints).union(newNodes).union(existingEdgesOnNewNodes);
+
+      cy.elements().addClass("cy-hidden");
+      visible.removeClass("cy-hidden");
+      cy.fit(cy.elements(":visible"), 20);
+      updateHint();
+    }
+
+    function renderGraph(oldArr, newArr) {
+      const container = $("cy");
+      if (!container || !renderSharedGraph) {
+        if (kgHint) kgHint.textContent = "Graph library not loaded.";
+        return;
+      }
+      cy = renderSharedGraph(cy, container, oldArr || [], newArr || [], true);
+      if (!cy) {
+        if (kgHint) kgHint.textContent = "Graph library not loaded.";
+        return;
+      }
+
+      applyNewPlus1HopFilter(!!showNewContextToggle?.checked);
+      updateHint();
+    }
+
+    showNewContextToggle?.addEventListener("change", () => applyNewPlus1HopFilter(showNewContextToggle.checked));
+    resetViewBtn?.addEventListener("click", () => cy && cy.fit(cy.elements(":visible"), 20));
+
+    let sessionId = localStorage.getItem('wikibase_extractor_session_id') || '';
+    let lastProposalId = null;
+    let approvedRows = [];
+
+    function setStatus(msg, cls = '') {
+      statusEl.textContent = msg || '';
+      statusEl.className = 'status' + (cls ? ' ' + cls : '');
+    }
+
+    function setMeta() {
+      const itemSet = new Set();
+      for (const row of approvedRows) {
+        if (row && typeof row === 'object' && row.item != null) {
+          itemSet.add(String(row.item));
+        }
+      }
+
+      objectsMetaEl.textContent = String(itemSet.size);
+      relationsMetaEl.textContent = String(approvedRows.length);
+    }
+
+    function setAction(msg) {
+      actionMetaEl.textContent = msg || '—';
+    }
+
+    const errorMessage = (err) => (err && err.message ? err.message : String(err));
+    async function runWithStatus(startMessage, startAction, failAction, requestFn) {
+      setStatus(startMessage, "warn");
+      setAction(startAction);
+      try {
+        return await requestFn();
+      } catch (err) {
+        setStatus("Error: " + errorMessage(err), "err");
+        setAction(failAction);
+        throw err;
+      }
+    }
+
+    async function postJson(url, payload, fallbackMessage) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || data.error || fallbackMessage);
+      return data;
+    }
+
+    function persistSession() {
+      if (sessionId) localStorage.setItem('wikibase_extractor_session_id', sessionId);
+    }
+
+    function clearProposalState() {
+      lastProposalId = null;
+      approveBtn.disabled = true;
+      setMeta();
+    }
+    function formatReasoningReport(report) {
+      if (!report || typeof report !== 'object') return 'No reasoning report available.';
+
+      const s = report.summary || {};
+      const changes = Array.isArray(report.proposed_changes) ? report.proposed_changes : [];
+      const warnings = Array.isArray(report.validation_warnings) ? report.validation_warnings : [];
+
+      const lines = [];
+      lines.push('Summary');
+      lines.push(`- Creates: ${s.creates ?? 0}`);
+      lines.push(`- Edits: ${s.edits ?? 0}`);
+      lines.push(`- Links: ${s.links ?? 0}`);
+      lines.push(`- Deletes: ${s.deletes ?? 0}`);
+      lines.push(`- Uncertain: ${s.uncertain ?? 0}`);
+      lines.push(`- Validation warnings: ${s.validation_warnings ?? warnings.length}`);
+      lines.push('');
+
+      if (warnings.length) {
+        lines.push('Validation warnings');
+        for (const w of warnings) lines.push(`- ${w}`);
+        lines.push('');
+      }
+
+      lines.push('Proposed changes');
+      if (!changes.length) {
+        lines.push('- None');
+      } else {
+        changes.forEach((c, i) => {
+          lines.push(`${i + 1}. ${c.what || 'Change'}`);
+          lines.push(`Subject: ${c.subject || '—'}`);
+          lines.push(`Statement: ${c.statement || '—'}`);
+          lines.push(`Why: ${c.why || '—'}`);
+
+          const evidence = Array.isArray(c.evidence) ? c.evidence.filter(Boolean) : [];
+          if (evidence.length) lines.push(`Evidence: ${evidence.join(' | ')}`);
+
+          if (c.confidence !== undefined && c.confidence !== null) {
+            lines.push(`Confidence: ${c.confidence}`);
+          }
+          if (c.needs_review) lines.push(`Needs review: ${c.needs_review}`);
+          lines.push('');
+        });
+      }
+
+      return lines.join('\n').trim();
+    }
+    async function generateProposal() {
+      const inputText = (inputEl.value || '').trim();
+      if (!inputText) {
+        setStatus('Please paste some text first.', 'warn');
+        return;
+      }
+
+      generateBtn.disabled = true;
+      approveBtn.disabled = true;
+
+      try {
+        const data = await runWithStatus(
+          "Generating proposal…",
+          "Generating",
+          "Failed",
+          () => postJson('/api/propose', {
+            input_text: inputText,
+            session_id: sessionId || null,
+          }, 'Request failed')
+        );
+
+        if (data.session_id) {
+          sessionId = data.session_id;
+          persistSession();
+        }
+
+        lastProposalId = data.proposal_id || null;
+        qsEl.value = JSON.stringify(data.proposed_kb_json || [], null, 2);
+        explainEl.value = formatReasoningReport(data.reasoning_report || {});
+        approveBtn.disabled = !lastProposalId;
+        finalizeBtn.disabled = !sessionId;
+
+        graphOldRows = Array.isArray(data.base_kb_json) ? data.base_kb_json : [];
+        graphNewRows = Array.isArray(data.proposed_kb_json) ? data.proposed_kb_json : [];
+        renderGraph(graphOldRows, graphNewRows);
+
+        setStatus('Proposal ready. Review reasoning and click Append to apply it to session state.', 'ok');
+        setAction('Proposal generated');
+        setMeta();
+      } catch {
+      } finally {
+        generateBtn.disabled = false;
+      }
+    }
+        async function approveProposal() {
+          if (!sessionId || !lastProposalId) {
+            setStatus('No proposal to approve yet.', 'warn');
+            return;
+          }
+          let editedKbJson;
+          try {
+            editedKbJson = JSON.parse(qsEl.value || '[]');
+            if (!Array.isArray(editedKbJson)) {
+              throw new Error('Proposed Wikibase JSON must be a JSON array.');
+            }
+          } catch (e) {
+            setStatus('Invalid proposed JSON: ' + e.message, 'err');
+            setAction('Approve failed');
+            return;
+          }
+          approveBtn.disabled = true;
+          try {
+            const data = await runWithStatus(
+              "Approving proposal…",
+              "Approving",
+              "Approve failed",
+              () => postJson('/api/approve', {
+                session_id: sessionId,
+                proposal_id: lastProposalId,
+                edited_kb_json: editedKbJson
+              }, 'Approve failed')
+            );
+            approvedRows = Array.isArray(data.current_kb_json) ? data.current_kb_json : [];
+            inputEl.value = '';
+            explainEl.value = '';
+            qsEl.value = '';
+            clearProposalState();
+            finalizeBtn.disabled = !sessionId;
+            setStatus('Approved. Cleared input/reasoning/JSON. Ready for next batch.', 'ok');
+            setAction('Proposal approved');
+
+          } catch (err) {
+            approveBtn.disabled = false;
+          } finally {
+            setMeta();
+          }
+        }
+    function goToFinalize() {
+      if (!sessionId) {
+        setStatus('No session ID available. Generate a proposal first.', 'warn');
+        return;
+      }
+      setStatus('Opening finalize view…', 'ok');
+      setAction('Finalizing');
+      window.location.href = `/website/finalize.html?session_id=${encodeURIComponent(sessionId)}`;
+    }
+    clearSessionBtn.addEventListener('click', () => {
+      localStorage.removeItem('wikibase_extractor_session_id');
+      sessionId = '';
+      approvedRows = [];
+      clearProposalState();
+      finalizeBtn.disabled = true;
+      graphOldRows = [];
+      graphNewRows = [];
+      renderGraph([], [])
+      setStatus('Local browser session cleared. Server-side session may still exist until restart.', 'warn');
+      setAction('Cleared local session');
+      setMeta();
+    });
+    generateBtn.addEventListener('click', generateProposal);
+    approveBtn.addEventListener('click', approveProposal);
+    finalizeBtn.addEventListener('click', goToFinalize);
+
+    setMeta();
+    setAction('Idle');
+    finalizeBtn.disabled = !sessionId;
+    renderGraph([], []);
+  </script>
+</body>
+</html>

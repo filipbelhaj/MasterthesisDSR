@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finalize</title>
+  <link rel="stylesheet" href="/website/styles.css" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="final-header">
+      <span class="final-header-title">Finalize</span>
+      <button id="newSessionBtn" type="button" class="final-header-btn">New Session</button>
+    </div>
+    <div class="final-grid">
+      <div class="panel">
+        <h2>Final Output</h2>
+        <textarea id="final_output" readonly></textarea>
+      </div>
+
+      <div class="panel">
+        <h2>QuickStatements</h2>
+        <textarea id="quickstatements_output" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="panel mt-16">
+      <h2>Knowledge Graph</h2>
+      <div id="final_kg_hint" class="help">Visible: 0 nodes, 0 edges.</div>
+      <div class="graph-legend" aria-label="Graph legend">
+        <span class="legend-item"><span class="legend-dot legend-old-node"></span>Existing node</span>
+        <span class="legend-item"><span class="legend-dot legend-new-node"></span>New node</span>
+        <span class="legend-item"><span class="legend-line legend-old-edge"></span>Existing edge</span>
+        <span class="legend-item"><span class="legend-line legend-new-edge"></span>New edge</span>
+      </div>
+      <div id="final_cy" class="final-cy"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+  <script src="/website/graph.js"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const newSessionBtn = $("newSessionBtn");
+    let cy = null;
+    const renderSharedGraph = window.TriExtractGraph?.renderGraph;
+
+    function renderGraph(oldArr, newArr) {
+      const container = $("final_cy");
+      const hint = $("final_kg_hint");
+      if (!container || !renderSharedGraph) {
+        hint.textContent = "Graph library not loaded.";
+        return;
+      }
+      cy = renderSharedGraph(cy, container, oldArr || [], newArr || [], false);
+      if (!cy) {
+        hint.textContent = "Graph library not loaded.";
+        return;
+      }
+
+      hint.textContent = `Visible: ${cy.nodes().length} nodes, ${cy.edges().length} edges.`;
+    }
+
+    async function initFinalize() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get("session_id") || localStorage.getItem("wikibase_extractor_session_id") || "";
+
+      if (!sessionId) return;
+
+      const [stateRes, queryRes, qsRes] = await Promise.all([
+        fetch(`/api/state/${encodeURIComponent(sessionId)}`),
+        fetch("/api/default-query"),
+        fetch(`/api/quickstatements/${encodeURIComponent(sessionId)}`)
+      ]);
+
+      const stateData = await stateRes.json();
+      const queryData = await queryRes.json();
+      const qsData = await qsRes.json();
+
+      if (!stateRes.ok) throw new Error(stateData.detail || "Could not load final state.");
+      if (!queryRes.ok) throw new Error(queryData.detail || "Could not load query.json.");
+      if (!qsRes.ok) throw new Error(qsData.detail || "Could not generate QuickStatements.");
+
+      const finalRows = Array.isArray(stateData.delta_kb_json)
+        ? stateData.delta_kb_json
+        : (Array.isArray(stateData.current_kb_json) ? stateData.current_kb_json : []);
+      const queryRows = queryData.exists && Array.isArray(queryData.rows) ? queryData.rows : [];
+      const quickstatements = typeof qsData.quickstatements === "string" ? qsData.quickstatements : "";
+
+      $("final_output").value = JSON.stringify(finalRows, null, 2);
+      $("quickstatements_output").value = quickstatements;
+      renderGraph(queryRows, finalRows);
+    }
+
+    initFinalize().catch((e) => {
+      const out = $("final_output");
+      if (out) out.value = `Error: ${e.message || e}`;
+    });
+
+    newSessionBtn?.addEventListener("click", () => {
+      localStorage.removeItem("wikibase_extractor_session_id");
+      window.location.href = "/website/Startpage.html";
+    });
+  </script>
+</body>
+</html>
