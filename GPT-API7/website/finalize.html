@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finalize</title>
+  <link rel="stylesheet" href="./styles.css?v=20260317-3" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="final-header">
+      <div class="header-left header-zone header-zone-left">
+        <span class="final-header-title">Finalize</span>
+      </div>
+      <nav class="header-zone header-zone-center header-nav" aria-label="Navigation">
+        <a class="final-header-btn" href="./Startpage.html">Start</a>
+        <a class="final-header-btn" href="./index.html">Extract</a>
+        <a class="final-header-btn active" href="#" aria-current="page">Finalize</a>
+      </nav>
+      <div class="header-zone header-zone-right">
+        <button id="newSessionBtn" type="button" class="final-header-btn">Clear / New Session</button>
+      </div>
+    </div>
+    <div class="meta session-summary">
+      <div class="chip"><b>Total Objects Created</b><span id="objects_meta">0</span></div>
+      <div class="chip"><b>Total Relations Created</b><span id="relations_meta">0</span></div>
+      <div class="chip"><b>Session Tokens (Total)</b><span id="session_tokens_meta">0</span></div>
+    </div>
+    <div class="final-grid">
+      <div class="panel">
+        <h2>Final Output</h2>
+        <textarea id="final_output" readonly></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title-row">
+          <h2>QuickStatements</h2>
+          <button id="copyQuickstatementsBtn" type="button" class="secondary">Copy</button>
+        </div>
+        <textarea id="quickstatements_output" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="panel mt-16">
+      <h2>Knowledge Graph</h2>
+      <div id="final_kg_hint" class="help">Visible: 0 nodes, 0 edges.</div>
+      <div class="help">Tip: hover a node/edge to focus and show labels; click to lock focus; click empty space to clear.</div>
+      <div class="graph-legend" aria-label="Graph legend">
+        <span class="legend-item"><span class="legend-dot legend-old-node"></span>Existing node</span>
+        <span class="legend-item"><span class="legend-dot legend-new-node"></span>New node</span>
+        <span class="legend-item"><span class="legend-line legend-old-edge"></span>Existing edge</span>
+        <span class="legend-item"><span class="legend-line legend-new-edge"></span>New edge</span>
+      </div>
+      <div id="final_cy" class="final-cy"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/cytoscape@3.29.2/dist/cytoscape.min.js"></script>
+  <script src="./graph.js?v=20260317-7"></script>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const newSessionBtn = $("newSessionBtn");
+    const copyQuickstatementsBtn = $("copyQuickstatementsBtn");
+    const objectsMetaEl = $("objects_meta");
+    const relationsMetaEl = $("relations_meta");
+    const sessionTokensMetaEl = $("session_tokens_meta");
+    let cy = null;
+    const renderSharedGraph = window.TriExtractGraph?.renderGraph;
+
+    function renderGraph(oldArr, newArr) {
+      const container = $("final_cy");
+      const hint = $("final_kg_hint");
+      if (!container || !renderSharedGraph) {
+        hint.textContent = "Graph library not loaded.";
+        return;
+      }
+      cy = renderSharedGraph(cy, container, oldArr || [], newArr || [], false);
+      if (!cy) {
+        hint.textContent = "Graph library not loaded.";
+        return;
+      }
+
+      hint.textContent = `Visible: ${cy.nodes().length} nodes, ${cy.edges().length} edges.`;
+    }
+
+    async function initFinalize() {
+      if (window.location.protocol === "file:") {
+        throw new Error("Open via the FastAPI server (run `python app.py` and use `/website/finalize.html`).");
+      }
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get("session_id") || localStorage.getItem("wikibase_extractor_session_id") || "";
+
+      if (!sessionId) return;
+
+      const [stateRes, queryRes, qsRes] = await Promise.all([
+        fetch(`/api/state/${encodeURIComponent(sessionId)}`),
+        fetch("/api/default-query"),
+        fetch(`/api/quickstatements/${encodeURIComponent(sessionId)}`)
+      ]);
+
+      const stateData = await stateRes.json();
+      const queryData = await queryRes.json();
+      const qsData = await qsRes.json();
+
+      if (!stateRes.ok) throw new Error(stateData.detail || "Could not load final state.");
+      if (stateData && stateData.exists === false) {
+        localStorage.removeItem("wikibase_extractor_session_id");
+        window.location.href = "./Startpage.html";
+        return;
+      }
+      if (!queryRes.ok) throw new Error(queryData.detail || "Could not load query.json.");
+      if (!qsRes.ok) throw new Error(qsData.detail || "Could not generate QuickStatements.");
+
+      const finalRows = Array.isArray(stateData.delta_kb_json)
+        ? stateData.delta_kb_json
+        : (Array.isArray(stateData.current_kb_json) ? stateData.current_kb_json : []);
+      const queryRows = queryData.exists && Array.isArray(queryData.rows) ? queryData.rows : [];
+      const quickstatements = typeof qsData.quickstatements === "string" ? qsData.quickstatements : "";
+
+      const itemSet = new Set();
+      for (const row of finalRows) {
+        if (row && typeof row === "object" && row.item != null) itemSet.add(String(row.item));
+      }
+      if (objectsMetaEl) objectsMetaEl.textContent = String(itemSet.size);
+      if (relationsMetaEl) relationsMetaEl.textContent = String(finalRows.length);
+      if (sessionTokensMetaEl) sessionTokensMetaEl.textContent = String(Number(stateData.token_usage_total || 0) || 0);
+
+      $("final_output").value = JSON.stringify(finalRows, null, 2);
+      $("quickstatements_output").value = quickstatements;
+      renderGraph(queryRows, finalRows);
+    }
+
+    initFinalize().catch((e) => {
+      const out = $("final_output");
+      if (out) out.value = `Error: ${e.message || e}`;
+    });
+
+    newSessionBtn?.addEventListener("click", () => {
+      localStorage.removeItem("wikibase_extractor_session_id");
+      window.location.href = "./Startpage.html";
+    });
+
+    copyQuickstatementsBtn?.addEventListener("click", async () => {
+      const out = $("quickstatements_output");
+      const text = (out?.value || "").trim();
+      const original = copyQuickstatementsBtn.textContent;
+
+      if (!text) {
+        copyQuickstatementsBtn.textContent = "Nothing to copy";
+        setTimeout(() => (copyQuickstatementsBtn.textContent = original), 1200);
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        copyQuickstatementsBtn.textContent = "Copied";
+      } catch {
+        if (out) {
+          out.focus();
+          out.select();
+          document.execCommand("copy");
+          out.setSelectionRange(0, 0);
+          copyQuickstatementsBtn.textContent = "Copied";
+        }
+      } finally {
+        setTimeout(() => (copyQuickstatementsBtn.textContent = original), 1200);
+      }
+    });
+  </script>
+</body>
+</html>
