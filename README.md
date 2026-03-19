@@ -1,6 +1,6 @@
 # MasterthesisDSR
 
-## GPT-API4 Rename to GPT-API6 if downloaded GPT-API6
+## GPT-API4 Rename to GPT-API6 if downloaded GPT-API7
 
 Extract the `GPT-API4` folder to your computer, open a terminal, navigate to the project folder, add your OpenAI API key, and run the app.
 
