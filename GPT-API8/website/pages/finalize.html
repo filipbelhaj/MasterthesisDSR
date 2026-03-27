@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Finalize</title>
+  <link rel="stylesheet" href="../css/styles.css?v=20260327-1" />
+</head>
+<body>
+  <div class="wrap">
+    <div class="final-header">
+      <div class="header-left header-zone header-zone-left">
+        <span class="final-header-title">Finalize</span>
+      </div>
+      <nav class="header-zone header-zone-center header-nav" aria-label="Navigation">
+        <a class="final-header-btn" href="./start.html">Start</a>
+        <a class="final-header-btn" href="./extract.html">Extract</a>
+        <a class="final-header-btn active" href="#" aria-current="page">Finalize</a>
+      </nav>
+      <div class="header-zone header-zone-right">
+        <button id="newSessionBtn" type="button" class="final-header-btn">Clear / New Session</button>
+      </div>
+    </div>
+    <div class="meta session-summary">
+      <div class="chip"><b>Total Objects Created</b><span id="objects_meta">0</span></div>
+      <div class="chip"><b>Total Relations Created</b><span id="relations_meta">0</span></div>
+      <div class="chip"><b>Session Tokens (Total)</b><span id="session_tokens_meta">0</span></div>
+    </div>
+    <div class="final-grid">
+      <div class="panel">
+        <h2>Final Output</h2>
+        <textarea id="final_output" readonly></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title-row">
+          <h2>Step 1 QuickStatements</h2>
+          <button id="copyStep1Btn" type="button" class="secondary">Copy</button>
+        </div>
+        <div id="quickstatements_warnings" class="help" hidden></div>
+        <textarea id="quickstatements_output" readonly></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title-row">
+          <h2>Placeholder Mapping</h2>
+          <button id="generateStep2Btn" type="button" class="secondary">Generate Step 2</button>
+        </div>
+        <div class="help">If Step 1 creates new items, paste their QIDs into the `qid` fields below, then generate Step 2.</div>
+        <textarea id="placeholder_bindings"></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title-row">
+          <h2>Step 2 QuickStatements</h2>
+          <button id="copyStep2Btn" type="button" class="secondary">Copy</button>
+        </div>
+        <div id="step2_warnings" class="help" hidden></div>
+        <textarea id="step2_quickstatements_output" readonly></textarea>
+      </div>
+    </div>
+
+    <div class="panel mt-16">
+      <h2>Knowledge Graph</h2>
+      <div id="final_kg_hint" class="help">Visible: 0 nodes, 0 edges.</div>
+      <div class="help">Tip: hover a node/edge to focus and show labels; click to lock focus; click empty space to clear.</div>
+      <div class="graph-legend" aria-label="Graph legend">
+        <span class="legend-item"><span class="legend-dot legend-old-node"></span>Existing node</span>
+        <span class="legend-item"><span class="legend-dot legend-new-node"></span>New node</span>
+        <span class="legend-item"><span class="legend-line legend-old-edge"></span>Existing edge</span>
+        <span class="legend-item"><span class="legend-line legend-new-edge"></span>New edge</span>
+      </div>
+      <div id="final_cy" class="final-cy"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/cytoscape@3.29.2/dist/cytoscape.min.js"></script>
+  <script src="../js/graph.js?v=20260317-7"></script>
+  <script src="../js/finalize.js?v=20260327-1"></script>
+</body>
+</html>

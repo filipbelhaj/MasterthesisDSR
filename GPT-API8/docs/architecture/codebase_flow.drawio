@@ -1,0 +1,1194 @@
+<mxfile host="app.diagrams.net" agent="Codex" version="24.7.17" compressed="false">
+  <diagram id="system-flow" name="Artifact Overview">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="user" value="User" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="40" y="240" width="100" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="start" value="Start Page&#xa;website/Startpage.html&#xa;Upload ontology and base graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="190" y="80" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="extract" value="Extract Page&#xa;website/index.html&#xa;Submit text, review, append" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="190" y="240" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="finalize" value="Finalize Page&#xa;website/finalize.html&#xa;Export delta JSON and QuickStatements" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="190" y="410" width="190" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="graph" value="Graph Renderer&#xa;website/graph.js&#xa;Preview of old vs new graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1">
+          <mxGeometry x="430" y="410" width="210" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="app" value="Application Bootstrap&#xa;app.py&#xa;FastAPI startup and ontology load" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1">
+          <mxGeometry x="430" y="80" width="210" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="api" value="API Layer&#xa;backend/api.py&#xa;Routes and orchestration" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="700" y="240" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="state" value="Session State&#xa;backend/state.py&#xa;base/current graph, history, deltas, dedupe&#xa;(empty if no base graph exists)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="980" y="80" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="extractor" value="Extraction Engine&#xa;backend/extractor.py&#xa;retrieval, prompting, validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="980" y="240" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="converter" value="Export Generator&#xa;backend/converter.py&#xa;QuickStatements export" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="980" y="410" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="kbindex" value="Retrieval Index&#xa;backend/kb_index.py&#xa;SQLite FTS over current graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1">
+          <mxGeometry x="1260" y="240" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ontology" value="Ontology JSON&#xa;startup file + uploads&#xa;(triple schema and constraints)" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="80" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="query" value="Optional Base Graph JSON&#xa;DEFAULT_QUERY_FILE / query.json" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="410" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="openai" value="OpenAI Services&#xa;embeddings + chat model" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1">
+          <mxGeometry x="1270" y="580" width="190" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="wikibase" value="Wikibase Cloud&#xa;QuickStatements import target" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="980" y="580" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="overview-legend" value="Legend&#xa;Yellow: user pages&#xa;Green: backend logic&#xa;Gray: files and stores&#xa;Blue cloud: AI service&#xa;Orange cloud: import target" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;" vertex="1" parent="1">
+          <mxGeometry x="40" y="600" width="320" height="150" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="user" target="start">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="user" target="extract">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="Served by FastAPI" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="app" target="start">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="Propose / approve" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="extract" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="Preview graph&#xa;base_kb_json + proposed_kb_json" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="extract" target="graph">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="Final graph&#xa;queryRows + finalRows" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="finalize" target="graph">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="Site + API routes" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="app" target="api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="Sessions / proposals" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="api" target="state">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="Proposal flow" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="api" target="extractor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="Export flow" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="api" target="converter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="Triple rules and constraints" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="ontology" target="extractor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="Optional base graph" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="query" target="state">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="Retrieve rows" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="extractor" target="kbindex">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="Embeddings + chat" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="extractor" target="openai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="rows_delta(base,current)" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="state" target="converter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="Finalize" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="extract" target="finalize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="Import QuickStatements" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1" source="converter" target="wikibase">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="proposal-pipeline" name="Proposal Generation Pipeline">
+    <mxGraphModel dx="1600" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1700" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0p" />
+        <mxCell id="1p" parent="0p" />
+        <mxCell id="p1" value="1. User submits source text" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1p">
+          <mxGeometry x="70" y="100" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p2" value="2. POST /api/propose" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1p">
+          <mxGeometry x="340" y="100" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p3" value="3. Create or load session&#xa;with current rows and kb_revision" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1p">
+          <mxGeometry x="620" y="100" width="240" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p4" value="4. Build prompt payload&#xa;source text + ontology rules + preview rows&#xa;+ entity hints" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1p">
+          <mxGeometry x="920" y="100" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p5" value="5. Retrieve graph context&#xa;label hits + SQLite FTS +&#xa;embedding reranking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1p">
+          <mxGeometry x="920" y="240" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p6" value="6. GPT returns structured JSON&#xa;with proposed rows and changes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" vertex="1" parent="1p">
+          <mxGeometry x="920" y="390" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p7" value="7. Validate rows&#xa;drop invalid / ontology-invalid rows&#xa;and dedupe exact triples" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1p">
+          <mxGeometry x="920" y="530" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p8" value="8. Reuse existing entities&#xa;and normalize ids" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1p">
+          <mxGeometry x="920" y="670" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p9" value="9. Build merged preview&#xa;skip rows already in the base graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1p">
+          <mxGeometry x="920" y="810" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p10" value="10. Build reasoning report&#xa;for the reviewer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" vertex="1" parent="1p">
+          <mxGeometry x="1260" y="810" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p11" value="11. Store proposal + metrics&#xa;and return the review package" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" vertex="1" parent="1p">
+          <mxGeometry x="1260" y="530" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p12" value="12. Browser shows the proposal&#xa;JSON, reasoning, and graph preview" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1p">
+          <mxGeometry x="1260" y="240" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p15" value="13. Build preview graph&#xa;from base_kb_json + proposed_kb_json" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" vertex="1" parent="1p">
+          <mxGeometry x="1260" y="360" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p13" value="Ontology JSON&#xa;(triple schema)" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1p">
+          <mxGeometry x="1260" y="100" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p14" value="Current working graph&#xa;session[&quot;current_kb_json&quot;]&#xa;(empty in create_new mode)" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1p">
+          <mxGeometry x="620" y="240" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p16" value="Create-new mode&#xa;If no `query.json` exists, the session starts with an empty graph and the KG is built from scratch." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;" vertex="1" parent="1p">
+          <mxGeometry x="70" y="250" width="230" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pe1" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p1" target="p2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe2" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p2" target="p3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe3" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p3" target="p4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe4" value="retrieval context" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p4" target="p5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe5" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p5" target="p6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe6" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p6" target="p7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe7" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p7" target="p8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe8" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p8" target="p9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe9" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p9" target="p10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe10" value="proposal object" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p10" target="p11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe11" value="UI response" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p11" target="p12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe14" value="graph preview" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1p" source="p12" target="p15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe12" value="ontology" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1p" source="p13" target="p4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="pe13" value="current rows" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1p" source="p14" target="p4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="llm-input-assembly" name="LLM Input Construction">
+    <mxGraphModel dx="1700" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1350" math="0" shadow="0">
+      <root>
+        <mxCell id="0a" />
+        <mxCell id="1a" parent="0a" />
+
+        <mxCell id="h1" value="1. Inputs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="40" y="20" width="340" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="h2" value="2. Context Preparation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="430" y="20" width="430" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="h3" value="3. Prompt Building" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="910" y="20" width="390" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="h4" value="4. AI Request" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="1360" y="20" width="330" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="h5" value="5. Result Processing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="1740" y="20" width="410" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="lane1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1a">
+          <mxGeometry x="40" y="70" width="340" height="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="lane2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1a">
+          <mxGeometry x="430" y="70" width="430" height="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="lane3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1a">
+          <mxGeometry x="910" y="70" width="390" height="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="lane4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1a">
+          <mxGeometry x="1360" y="70" width="330" height="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="lane5" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1a">
+          <mxGeometry x="1740" y="70" width="410" height="1180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="s1" value="A. Upload ontology file" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="70" y="110" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="B. Save ontology file" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f7f4ef;strokeColor=#827b72;" vertex="1" parent="1a">
+          <mxGeometry x="110" y="240" width="180" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="C. Load ontology into memory&#xa;for lookup, prompting, and validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1a">
+          <mxGeometry x="70" y="350" width="260" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" value="D. Build compact ontology summary&#xa;for the prompt" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1a">
+          <mxGeometry x="70" y="520" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" value="Important&#xa;The ontology is not embedded.&#xa;It is inserted into the prompt as structured data." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="70" y="650" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" value="E. Source text" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="70" y="810" width="260" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="r1" value="F. Send text to backend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="470" y="110" width="310" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="G. Load or create session&#xa;with current rows and kb_revision&#xa;(empty if no base graph exists)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1a">
+          <mxGeometry x="470" y="230" width="310" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="H. Retrieve the most relevant&#xa;graph context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6dfef;strokeColor=#9a86a8;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="470" y="390" width="310" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" value="H1. Direct text matches&#xa;from item/value labels" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1a">
+          <mxGeometry x="470" y="510" width="140" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="r5" value="H2. SQLite FTS search over&#xa;the current working graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1a">
+          <mxGeometry x="635" y="510" width="145" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="r5b" value="H3. Candidate KB rows&#xa;bounded subset from FTS retrieval" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f4ef;strokeColor=#827b72;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="545" y="655" width="170" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r6" value="H4. Embed the input text and candidate rows&#xa;then rerank by vector similarity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1a">
+          <mxGeometry x="470" y="780" width="310" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="r6b" value="H5. Top-K preview rows&#xa;selected as GPT context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee6cf;strokeColor=#d18c57;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="535" y="920" width="180" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="r7" value="Important&#xa;The embedding model works only in H4.&#xa;The ontology itself is not embedded." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="470" y="1030" width="310" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="p1a" value="I. Assemble prompt payload" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6dfef;strokeColor=#9a86a8;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="970" y="110" width="230" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p2a" value="Source text" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1a">
+          <mxGeometry x="950" y="230" width="270" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="p3a" value="Ontology rules" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1a">
+          <mxGeometry x="950" y="340" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p4a" value="Retrieved graph rows" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1a">
+          <mxGeometry x="950" y="460" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p5a" value="Entity hints&#xa;from labels seen in the text" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1a">
+          <mxGeometry x="950" y="580" width="270" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="p6a" value="Existing labels" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1a">
+          <mxGeometry x="950" y="700" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p7a" value="Output schema" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1a">
+          <mxGeometry x="950" y="800" width="270" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="p8a" value="Final user message&#xa;sent to GPT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee6cf;strokeColor=#d18c57;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="950" y="900" width="270" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="l1" value="System instructions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee6cf;strokeColor=#d18c57;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="1400" y="180" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="l2" value="Send system prompt and&#xa;user message to GPT" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="1390" y="350" width="260" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="l3" value="GPT returns structured JSON&#xa;(separate from the embedding step)" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1a">
+          <mxGeometry x="1410" y="600" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="l4" value="Token usage&#xa;is returned as well" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f4ef;strokeColor=#827b72;" vertex="1" parent="1a">
+          <mxGeometry x="1390" y="750" width="260" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="o1" value="Read JSON response" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1a">
+          <mxGeometry x="1820" y="120" width="250" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="o2" value="Validate rows against the ontology&#xa;and dedupe exact triples" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1a">
+          <mxGeometry x="1820" y="230" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="o3" value="Reuse existing entities&#xa;and clean up ids" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1a">
+          <mxGeometry x="1820" y="360" width="250" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="o4" value="Build merged preview&#xa;and collect added rows" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1a">
+          <mxGeometry x="1820" y="510" width="250" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="o5" value="Build reviewer-facing&#xa;reasoning report" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1a">
+          <mxGeometry x="1820" y="650" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="o6" value="Store proposal&#xa;and attach metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6dfef;strokeColor=#9a86a8;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="1820" y="780" width="250" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="o7" value="Return proposal&#xa;to the browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="1820" y="900" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="o8" value="Build preview graph&#xa;from old and proposed rows" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1a">
+          <mxGeometry x="1790" y="1010" width="320" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="o9" value="Highlight old vs new&#xa;in the preview graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;" vertex="1" parent="1a">
+          <mxGeometry x="1790" y="1140" width="320" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e1a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="s1" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e2a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="s2" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e3a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="s3" target="s4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e4a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="s4" target="s5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e5a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="s6" target="r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e6a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r1" target="r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e7a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r2" target="r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e8a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r3" target="r4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e9a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r3" target="r5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10a" value="candidate subset" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r5" target="r5b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10b" value="embed + rerank" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r5b" target="r6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10c" value="kept directly" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r4" target="r6b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e10d" value="reranked rows" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r6" target="r6b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e11a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r6" target="r7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e12a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="r3" target="p1a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e13a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="p1a" target="p2a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e14a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="p2a" target="p3a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e15a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="p3a" target="p4a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e16a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="p4a" target="p5a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="p5a" target="p6a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e18a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="p6a" target="p7a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="p7a" target="p8a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e20a" value="compact ontology" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1a" source="s4" target="p3a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e21a" value="existing_kb_preview_rows" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1a" source="r6b" target="p4a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e22a" value="current working rows" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1a" source="r2" target="p5a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e23a" value="user message" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="p8a" target="l2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e24a" value="system message" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="l1" target="l2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e25a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="l2" target="l3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e26a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="l3" target="l4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e27a" value="JSON content" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="l3" target="o1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e28a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="o1" target="o2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e29a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="o2" target="o3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e30a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="o3" target="o4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e31a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="o4" target="o5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e32a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="o5" target="o6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e33a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="o6" target="o7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e34a" value="token_usage" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1a" source="l4" target="o6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e35a" value="preview graph" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="o7" target="o8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e36a" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1a" source="o8" target="o9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="system-architecture" name="Layered Architecture">
+    <mxGraphModel dx="1700" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1400" math="0" shadow="0">
+      <root>
+        <mxCell id="0s" />
+        <mxCell id="1s" parent="0s" />
+
+        <mxCell id="arch-title-ui" value="Presentation Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="40" y="30" width="460" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-title-api" value="Application Layer" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="540" y="30" width="520" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-title-ai" value="AI And Processing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="1100" y="30" width="520" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-title-data" value="Data And External Services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="1660" y="30" width="440" height="42" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-lane-ui" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1s">
+          <mxGeometry x="40" y="85" width="460" height="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-lane-api" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1s">
+          <mxGeometry x="540" y="85" width="520" height="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-lane-ai" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1s">
+          <mxGeometry x="1100" y="85" width="520" height="1180" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-lane-data" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1s">
+          <mxGeometry x="1660" y="85" width="440" height="1180" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-user" value="User" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="80" y="120" width="90" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-start" value="Start page&#xa;Upload ontology and&#xa;optional base graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="210" y="110" width="250" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-index" value="Extract page&#xa;Enter text, review proposals,&#xa;edit rows, preview graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="120" y="290" width="280" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-finalize" value="Finalize page&#xa;Review final graph&#xa;and export output" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="120" y="500" width="280" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-graph" value="Graph renderer&#xa;Draws old and new rows&#xa;and highlights changes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;" vertex="1" parent="1s">
+          <mxGeometry x="120" y="720" width="280" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-browser" value="Browser local state&#xa;localStorage keeps the&#xa;session id and last proposal id" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;" vertex="1" parent="1s">
+          <mxGeometry x="120" y="900" width="280" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-app" value="FastAPI application&#xa;Serves the site and&#xa;loads ontology at startup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6dfef;strokeColor=#9a86a8;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="600" y="110" width="320" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-api" value="API layer&#xa;Uploads, proposals, approval,&#xa;state lookup, and export" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="600" y="290" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-models" value="Request schemas&#xa;Validate API payloads" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1s">
+          <mxGeometry x="600" y="470" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-state" value="Session state&#xa;SESSIONS / PROPOSALS, base/current graph,&#xa;history, kb_revision, deltas, dedupe&#xa;(empty in create_new mode)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="600" y="620" width="320" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-config" value="Runtime settings&#xa;Models, paths, host, and limits" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1s">
+          <mxGeometry x="600" y="820" width="320" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-extractor" value="Extraction engine&#xa;Retrieves graph context, builds prompts,&#xa;calls GPT, and prepares results" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="1160" y="110" width="320" height="150" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-prompt" value="System prompt&#xa;GPT extraction instructions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee6cf;strokeColor=#d18c57;" vertex="1" parent="1s">
+          <mxGeometry x="1160" y="330" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-kbindex" value="Retrieval index&#xa;Builds FTS candidates for&#xa;embedding reranking" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1s">
+          <mxGeometry x="1160" y="490" width="320" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-converter" value="Export generator&#xa;Turns delta rows into one-step or&#xa;two-step QuickStatements" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1s">
+          <mxGeometry x="1160" y="670" width="320" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-nonai" value="Important&#xa;After GPT responds, the backend still handles validation, entity reuse, merging, and explanation building." style="shape=note;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1s">
+          <mxGeometry x="1160" y="860" width="320" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="arch-ontology" value="Ontology JSON&#xa;startup source + uploads&#xa;(triple schema)" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1s">
+          <mxGeometry x="1740" y="120" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-query" value="Optional base graph seed&#xa;DEFAULT_QUERY_FILE / query.json" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" vertex="1" parent="1s">
+          <mxGeometry x="1740" y="250" width="170" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-sessions" value="Runtime memory&#xa;SESSIONS + PROPOSALS&#xa;live until restart" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="1740" y="390" width="200" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-openai" value="OpenAI API&#xa;embeddings + chat completions" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1;" vertex="1" parent="1s">
+          <mxGeometry x="1740" y="560" width="210" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-wikibase" value="Wikibase Cloud&#xa;final import target" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" vertex="1" parent="1s">
+          <mxGeometry x="1740" y="760" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="arch-note" value="Architecture note&#xa;This page shows subsystem dependencies rather than step-by-step flow." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;" vertex="1" parent="1s">
+          <mxGeometry x="1740" y="960" width="260" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="as1" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-user" target="arch-start">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as2" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-user" target="arch-index">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as3" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-user" target="arch-finalize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="as4" value="served by FastAPI" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-app" target="arch-start">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as5" value="served by FastAPI" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-app" target="arch-index">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as6" value="served by FastAPI" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-app" target="arch-finalize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="as7" value="uploads / fetch calls" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-start" target="arch-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as8" value="propose / approve /&#xa;state refresh" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-index" target="arch-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as9" value="default-query / state /&#xa;quickstatements / step2" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-finalize" target="arch-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as10" value="shared render helper" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-graph" target="arch-index">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as11" value="shared render helper" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-graph" target="arch-finalize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as30" value="oldArr = base_kb_json&#xa;newArr = proposed_kb_json" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1s" source="arch-index" target="arch-graph">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as31" value="oldArr = queryRows&#xa;newArr = finalRows" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1s" source="arch-finalize" target="arch-graph">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as12" value="stores ids" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1s" source="arch-index" target="arch-browser">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as13" value="reads ids" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1s" source="arch-browser" target="arch-finalize">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="as14" value="validates request bodies" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-api" target="arch-models">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as15" value="reads / writes sessions and proposals" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-api" target="arch-state">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as16" value="proposal generation" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-api" target="arch-extractor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as17" value="final export" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-api" target="arch-converter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as18" value="runtime config" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1s" source="arch-config" target="arch-api">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as19" value="runtime config" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1s" source="arch-config" target="arch-extractor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="as20" value="system instructions" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-prompt" target="arch-extractor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as21" value="retrieval support" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-kbindex" target="arch-extractor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as22" value="non-LLM logic" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1s" source="arch-extractor" target="arch-nonai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as23" value="rows_delta(base,current)" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-state" target="arch-converter">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="as24" value="loaded at startup" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-ontology" target="arch-app">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as25" value="ontology store source" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-ontology" target="arch-extractor">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as26" value="base rows for sessions" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-query" target="arch-state">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as27" value="mirrors runtime state" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1s" source="arch-state" target="arch-sessions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as28" value="embedding rerank + chat extraction" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-extractor" target="arch-openai">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="as29" value="paste/import output" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1s" source="arch-converter" target="arch-wikibase">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="detailed-workflow" name="Session Lifecycle">
+    <mxGraphModel dx="1800" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2760" pageHeight="1940" math="0" shadow="0">
+      <root>
+        <mxCell id="0w" />
+        <mxCell id="1w" parent="0w" />
+
+        <mxCell id="wf-h1" value="A. Startup And Setup" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="40" y="20" width="520" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="wf-h2" value="B. One Extraction Round" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="620" y="20" width="760" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="wf-h3" value="C. Append Loop" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="1470" y="20" width="470" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="wf-h4" value="D. Finalization And Export" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="2020" y="20" width="620" height="42" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wf-l1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1w">
+          <mxGeometry x="40" y="75" width="520" height="1790" as="geometry" />
+        </mxCell>
+        <mxCell id="wf-l2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1w">
+          <mxGeometry x="620" y="75" width="760" height="1790" as="geometry" />
+        </mxCell>
+        <mxCell id="wf-l3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1w">
+          <mxGeometry x="1470" y="75" width="470" height="1790" as="geometry" />
+        </mxCell>
+        <mxCell id="wf-l4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1w">
+          <mxGeometry x="2020" y="75" width="620" height="1790" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wf1" value="1. App starts" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6dfef;strokeColor=#9a86a8;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="90" y="110" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wf2" value="2. Load ontology&#xa;into memory" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="90" y="250" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="wf3" value="3. User may upload&#xa;a new ontology" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1w">
+          <mxGeometry x="90" y="400" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wf4" value="4. New ontology&#xa;replaces the active one" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="90" y="540" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="wf5" value="5. User may also upload&#xa;an existing graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1w">
+          <mxGeometry x="90" y="690" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wf6" value="6. New base graph resets&#xa;sessions and cached search data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;" vertex="1" parent="1w">
+          <mxGeometry x="90" y="830" width="300" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wf7" value="7. Open the extract page" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="90" y="990" width="300" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="wf-note-setup" value="Setup state&#xa;Ontology is in memory, a starting graph may exist, and no extraction session is active yet." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#d18c57;" vertex="1" parent="1w">
+          <mxGeometry x="90" y="1130" width="320" height="140" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wf8" value="8. Submit text&#xa;for extraction" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="110" width="290" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wf9" value="9. Request reaches backend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="1020" y="110" width="290" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="wf10" value="10. Create or reuse session.&#xa;Base rows seed `base_kb_json`&#xa;and `current_kb_json`, or both start empty." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="260" width="620" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="wf11" value="11. `current_kb_json` becomes&#xa;the working context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f4ef;strokeColor=#827b72;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="410" width="620" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="wf12" value="12. Build AI request from&#xa;text, ontology rules, and graph context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="530" width="620" height="140" as="geometry" />
+        </mxCell>
+        <mxCell id="wf13" value="13. Retrieve graph context through&#xa;label hits, FTS, and embeddings" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="720" width="620" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wf14" value="14. Send prompt and context&#xa;to the AI model" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="880" width="620" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wf15" value="15. AI returns proposed rows&#xa;and raw changes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="1050" width="620" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="wf16" value="16. Validate rows against the ontology, remove duplicates,&#xa;and build the preview" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="1180" width="620" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="wf17" value="17. Browser receives the proposal,&#xa;reasoning, and preview data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="1360" width="620" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wf18" value="18. Prepare old and proposed&#xa;graphs for display" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="1530" width="620" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="wf18b" value="19. Preview graph highlights&#xa;old vs new" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="690" y="1645" width="620" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wf19" value="20. Reviewer inspects&#xa;the proposal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="1565" y="110" width="280" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="wf20" value="21. Reviewer may edit rows&#xa;before accepting" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1w">
+          <mxGeometry x="1565" y="230" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="wf21" value="22. Append accepted rows" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="1565" y="360" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="wf22" value="23. Deduplicate accepted rows into&#xa;`current_kb_json` and increment `kb_revision`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="1565" y="520" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wf23" value="24. Updated graph becomes&#xa;the next-round context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="1565" y="690" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wf24" value="25. Ready for the next&#xa;text batch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1w">
+          <mxGeometry x="1565" y="860" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wf25" value="26. More text to process?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="1545" y="1010" width="320" height="130" as="geometry" />
+        </mxCell>
+        <mxCell id="wf26" value="Yes: run another round&#xa;with the updated graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="1565" y="1210" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wf27" value="No: move to Finalize" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="1565" y="1360" width="280" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="wf-note-loop" value="Loop summary&#xa;Generate, review, append, and repeat.&#xa;Each accepted batch expands the working graph." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#d18c57;" vertex="1" parent="1w">
+          <mxGeometry x="1535" y="1490" width="340" height="130" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wf28" value="27. Finalize auto-appends&#xa;any pending proposal" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="2140" y="110" width="360" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wf29" value="28. Open final page" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1w">
+          <mxGeometry x="2140" y="270" width="360" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="wf30" value="29. Load session state,&#xa;default query, and export data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="2140" y="400" width="360" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wf31" value="30. Compute&#xa;`rows_delta(base_kb_json, current_kb_json)`" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="2140" y="560" width="360" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="wf32" value="31. Important&#xa;Export only the session delta.&#xa;If no base graph exists, the delta is the created graph." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="2140" y="720" width="360" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wf33" value="32. Build final graph and export package&#xa;from queryRows + finalRows" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="2140" y="890" width="360" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wf34" value="33. Are unresolved placeholders present?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="2180" y="1040" width="280" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="wf35" value="No&#xa;Single-step export is ready" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="2100" y="1230" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wf36" value="Yes&#xa;Two-step export is needed" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="2350" y="1230" width="220" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wf37" value="34. Step 1&#xa;Create new items" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1w">
+          <mxGeometry x="2350" y="1380" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="wf38" value="35. Paste the created IDs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;" vertex="1" parent="1w">
+          <mxGeometry x="2350" y="1500" width="220" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="wf39" value="36. Step 2&#xa;Generate final export" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1w">
+          <mxGeometry x="2350" y="1620" width="240" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="wf40" value="37. Final result&#xa;Review final graph, copy export,&#xa;and import into Wikibase" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee6cf;strokeColor=#d18c57;fontStyle=1;" vertex="1" parent="1w">
+          <mxGeometry x="2160" y="1740" width="350" height="110" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wfe1" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf1" target="wf2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe2" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf2" target="wf3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe3" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf3" target="wf4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe4" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf4" target="wf5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe5" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf5" target="wf6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe6" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf6" target="wf7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wfe7" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf7" target="wf8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe8" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf8" target="wf9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe9" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf9" target="wf10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe10" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf10" target="wf11">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe11" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf11" target="wf12">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe12" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf12" target="wf13">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe13" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf13" target="wf14">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe14" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf14" target="wf15">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe15" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf15" target="wf16">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe16" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf16" target="wf17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe17" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf17" target="wf18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe17b" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf18" target="wf18b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wfe18" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf18b" target="wf19">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe19" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf19" target="wf20">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe20" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf20" target="wf21">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe21" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf21" target="wf22">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe22" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf22" target="wf23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe23" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf23" target="wf24">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe24" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf24" target="wf25">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe25" value="Yes" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;strokeColor=#82b366;fontColor=#2f6b2f;" edge="1" parent="1w" source="wf25" target="wf26">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe26" value="Loop back" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;strokeColor=#82b366;fontColor=#2f6b2f;" edge="1" parent="1w" source="wf26" target="wf8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1500" y="1255" />
+              <mxPoint x="1500" y="80" />
+              <mxPoint x="835" y="80" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wfe27" value="No" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1w" source="wf25" target="wf27">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe28" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf27" target="wf28">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="wfe29" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf28" target="wf29">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe30" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf29" target="wf30">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe31" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf30" target="wf31">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe32" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf31" target="wf32">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe33" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf32" target="wf33">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe34" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf33" target="wf34">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe35" value="No" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;strokeColor=#82b366;fontColor=#2f6b2f;" edge="1" parent="1w" source="wf34" target="wf35">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe36" value="Yes" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1w" source="wf34" target="wf36">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe37" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf36" target="wf37">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe38" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf37" target="wf38">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe39" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf38" target="wf39">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="wfe40" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf39" target="wf40">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2470" y="1760" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="wfe41" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1w" source="wf35" target="wf40">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2210" y="1680" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram id="thesis-summary" name="Thesis Workflow Summary">
+    <mxGraphModel dx="1800" dy="1100" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2800" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0t" />
+        <mxCell id="1t" parent="0t" />
+
+        <mxCell id="ts-h1" value="A. Inputs And Session Context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="40" y="20" width="360" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-h2" value="B. Retrieval And Prompt Assembly" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="440" y="20" width="700" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-h3" value="C. GPT Extraction And Validation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="1180" y="20" width="540" height="42" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-h4" value="D. Human Review, Loop, And Export" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#295b66;strokeColor=#295b66;fontColor=#ffffff;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="1760" y="20" width="780" height="42" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ts-l1" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1t">
+          <mxGeometry x="40" y="75" width="360" height="1120" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-l2" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1t">
+          <mxGeometry x="440" y="75" width="700" height="1120" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-l3" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1t">
+          <mxGeometry x="1180" y="75" width="540" height="1120" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-l4" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fcfaf5;strokeColor=#ddd5c7;" vertex="1" parent="1t">
+          <mxGeometry x="1760" y="75" width="780" height="1120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ts-i1" value="Source text&#xa;entered by the user" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="90" y="130" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-i2" value="Active ontology in memory&#xa;loaded at startup or by upload&#xa;(triple schema and constraints)" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f7f4ef;strokeColor=#827b72;" vertex="1" parent="1t">
+          <mxGeometry x="90" y="290" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-i3" value="Session state&#xa;base_kb_json (seed) and&#xa;current_kb_json (working graph)&#xa;(empty in create_new mode)" style="shape=database;whiteSpace=wrap;html=1;fillColor=#f7f4ef;strokeColor=#827b72;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="90" y="470" width="260" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-inote" value="Setup note&#xa;If no base graph / `query.json` exists, the session starts empty and the KG is created from scratch." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;" vertex="1" parent="1t">
+          <mxGeometry x="80" y="680" width="280" height="120" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ts-r1" value="Normalize the input text" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1t">
+          <mxGeometry x="500" y="130" width="260" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-r2" value="Direct lexical label hits&#xa;from item/value labels" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1t">
+          <mxGeometry x="500" y="290" width="260" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-r3" value="SQLite FTS retrieval&#xa;over the current working graph" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1t">
+          <mxGeometry x="800" y="290" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-r4" value="Candidate KB rows&#xa;bounded subset returned by retrieval" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f7f4ef;strokeColor=#827b72;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="640" y="460" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-r5" value="Embedding-based reranking&#xa;embed input text + candidate rows&#xa;and compare by vector similarity" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="600" y="620" width="380" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-r6" value="Top-K preview rows&#xa;selected as GPT context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee6cf;strokeColor=#d18c57;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="650" y="800" width="280" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-r7" value="Prompt payload assembled&#xa;source text + ontology rules +&#xa;preview rows + entity hints + schema" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6dfef;strokeColor=#9a86a8;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="590" y="970" width="400" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-rnote" value="Important&#xa;The ontology is not embedded. Embeddings are used only to rerank candidate KB rows before the GPT call." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;" vertex="1" parent="1t">
+          <mxGeometry x="500" y="1100" width="580" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ts-a1" value="System prompt&#xa;ontology-constrained extraction instructions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee6cf;strokeColor=#d18c57;" vertex="1" parent="1t">
+          <mxGeometry x="1270" y="140" width="360" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-a2" value="GPT extraction call&#xa;chat completion receives system prompt + prompt payload" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="1250" y="310" width="400" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-a3" value="Structured proposal output&#xa;proposed rows + raw changes" style="shape=cloud;whiteSpace=wrap;html=1;fillColor=#dcecf7;strokeColor=#7a9fb0;" vertex="1" parent="1t">
+          <mxGeometry x="1290" y="500" width="320" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-a4" value="Backend validation and cleanup&#xa;drop ontology-invalid rows, dedupe exact triples,&#xa;reuse matching entities, build merged preview" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1t">
+          <mxGeometry x="1230" y="680" width="440" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-a5" value="Review package&#xa;patch rows, reasoning report,&#xa;and preview graph data" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="1270" y="890" width="360" height="100" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ts-hu1" value="Reviewer inspects the preview graph&#xa;and the generated explanation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="1840" y="140" width="300" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-hu2" value="Append another text batch?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fdf0cf;strokeColor=#cfb26a;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="1890" y="300" width="200" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-hu2b" value="Finalize path&#xa;Pending proposal is auto-appended&#xa;before export is prepared" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="2200" y="320" width="300" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-hu3" value="Accepted rows are deduplicated into&#xa;current_kb_json and kb_revision increments" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1t">
+          <mxGeometry x="1800" y="500" width="380" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-hu4" value="Updated session graph&#xa;becomes the next round's context" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fde0d7;strokeColor=#c1775f;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="1800" y="680" width="380" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-hu5" value="Export preparation&#xa;compute rows_delta(base_kb_json, current_kb_json)&#xa;or export the full created graph if base is empty" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeee2;strokeColor=#7ca483;" vertex="1" parent="1t">
+          <mxGeometry x="2210" y="500" width="280" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-hu6" value="Final export package&#xa;final graph preview + deduplicated JSON +&#xa;one-step / two-step QuickStatements" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee6cf;strokeColor=#d18c57;fontStyle=1;" vertex="1" parent="1t">
+          <mxGeometry x="2170" y="700" width="340" height="110" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-hu-note" value="Export note&#xa;Only the session delta is exported, not the entire base graph." style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d79b00;" vertex="1" parent="1t">
+          <mxGeometry x="2170" y="900" width="340" height="90" as="geometry" />
+        </mxCell>
+
+        <mxCell id="ts-e1" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-i1" target="ts-r1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e2" value="current graph" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1t" source="ts-i3" target="ts-r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e3" value="current graph" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1t" source="ts-i3" target="ts-r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e4" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-r1" target="ts-r2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e5" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-r1" target="ts-r3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e6" value="candidate subset" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-r3" target="ts-r4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e7" value="embed + rerank" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-r4" target="ts-r5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e8" value="kept directly" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-r2" target="ts-r6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e9" value="reranked rows" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-r5" target="ts-r6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e10" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-r6" target="ts-r7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e10b" value="normalized source text" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1t" source="ts-r1" target="ts-r7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e11" value="ontology summary" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;" edge="1" parent="1t" source="ts-i2" target="ts-r7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e12" value="prompt payload" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-r7" target="ts-a2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e13" value="system instructions" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-a1" target="ts-a2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e14" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-a2" target="ts-a3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e15" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-a3" target="ts-a4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e16" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-a4" target="ts-a5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e17" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-a5" target="ts-hu1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e18" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-hu1" target="ts-hu2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e19" value="Yes" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;strokeColor=#82b366;fontColor=#2f6b2f;" edge="1" parent="1t" source="ts-hu2" target="ts-hu3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e20" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-hu3" target="ts-hu4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e21" value="updated graph for next round" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;dashed=1;endArrow=block;strokeColor=#82b366;fontColor=#2f6b2f;" edge="1" parent="1t" source="ts-hu4" target="ts-i3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1700" y="725" />
+              <mxPoint x="1700" y="520" />
+              <mxPoint x="390" y="520" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ts-e22" value="No" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;strokeColor=#b85450;fontColor=#b85450;" edge="1" parent="1t" source="ts-hu2" target="ts-hu2b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e22b" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-hu2b" target="ts-hu5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ts-e23" value="" style="edgeStyle=orthogonalEdgeStyle;orthogonalLoop=1;jettySize=auto;html=1;rounded=0;endArrow=block;" edge="1" parent="1t" source="ts-hu5" target="ts-hu6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
