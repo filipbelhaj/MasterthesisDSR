@@ -25,7 +25,7 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", tuning.EMBEDDING_MODEL)
 EXTRACTOR_MODEL = os.getenv("EXTRACTOR_MODEL", tuning.EXTRACTOR_MODEL)
 EXTRACTOR_TEMPERATURE = env_float("EXTRACTOR_TEMPERATURE", tuning.EXTRACTOR_TEMPERATURE)
 PORT = env_int("PORT", 8000)
-HOST = os.getenv("HOST", "0.0.0.0")
+HOST = os.getenv("HOST", "127.0.0.1")
 
 ONTOLOGY_FILE = Path(os.getenv("ONTOLOGY_FILE", "user_data_editable/ontology.json"))
 DEFAULT_QUERY_FILE = Path(os.getenv("DEFAULT_QUERY_FILE", "user_data_editable/query.json"))
