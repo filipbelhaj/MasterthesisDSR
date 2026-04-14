@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ORS Explorer</title>
+  <link rel="stylesheet" href="../css/styles.css?v=20260329-7" />
+</head>
+<body class="extract-page">
+		      <div class="wrap">
+		      <div class="final-header">
+		        <div class="header-left header-zone header-zone-left">
+		          <span class="final-header-title">ORS Explorer</span>
+		        </div>
+		        <nav class="header-zone header-zone-center header-nav" aria-label="Navigation">
+		          <a class="final-header-btn" href="./start.html"><span class="nav-step-index" aria-hidden="true">1</span><span class="nav-step-label">Configure</span></a>
+		          <a class="final-header-btn active" href="./extract.html" aria-current="page"><span class="nav-step-index" aria-hidden="true">2</span><span class="nav-step-label">Extract</span></a>
+		          <button id="nav_finalize_btn" type="button" class="final-header-btn" disabled><span class="nav-step-index" aria-hidden="true">3</span><span class="nav-step-label">Export</span></button>
+		        </nav>
+	        <div class="header-zone header-zone-right">
+	          <button id="clear_session_btn" type="button" class="final-header-btn">Clear / New Session</button>
+	        </div>
+	      </div>
+
+	      <div class="meta session-summary">
+	        <div class="chip"><b>Total Objects Created</b><span id="objects_meta">0</span></div>
+	        <div class="chip"><b>Total Relations Created</b><span id="relations_meta">0</span></div>
+	        <div class="chip"><b>Session Tokens (Total)</b><span id="session_tokens_meta">0</span></div>
+	      </div>
+
+		    <div class="panel">
+		      <h2>Input Text</h2>
+		      <textarea id="input_text" placeholder="Paste legal/regulatory text to extract triples."></textarea>
+          <label class="mt-16" for="user_extraction_instruction"><strong>Additional Instruction</strong></label>
+          <textarea
+            id="user_extraction_instruction"
+            placeholder='Optional. Example: "This passage mentions several rule documents. Register all of them."'
+          ></textarea>
+		      <div class="toolbar-row mt-16">
+		        <button id="generate_btn" type="button">Generate Proposal</button>
+		        <div class="inline-chips">
+		          <div class="chip"><b>Status</b><span id="status" class="status" aria-live="polite">Idle</span></div>
+		          <div class="chip"><b>Last Action</b><span id="action_meta">—</span></div>
+	          <div class="chip"><b>Generation Time</b><span id="gen_time_meta">—</span></div>
+	          <div class="chip"><b>Tokens Used</b><span id="gen_tokens_meta">0</span></div>
+	        </div>
+	      </div>
+		    </div>
+
+        <p class="start-section-label extract-section-label">Output</p>
+
+	    <div id="outputsPanel" class="panel" data-collapsed="true">
+	      <div class="outputs-subhead">
+	        <div class="outputs-label">Wikibase JSON</div>
+	        <div class="outputs-subhead-right">
+	          <div class="outputs-label">Reasoning</div>
+	          <button id="toggleOutputsBtn" type="button" class="secondary accordion-toggle-all" aria-expanded="false">
+	            Expand ▾
+	          </button>
+	        </div>
+	      </div>
+	      <div class="outputs-grid">
+	        <div>
+	          <div class="outputs-col-title">Wikibase JSON</div>
+		          <textarea id="qs_output" placeholder="The knowledge graph fragment in JSON format will be shown here. If desired, the JSON may be edited before adding it to the main knowledge graph."></textarea>
+	        </div>
+	        <div>
+	          <div class="outputs-col-title">Reasoning</div>
+		          <textarea id="explain_output" readonly placeholder="Review this before clicking Apply."></textarea>
+	        </div>
+	      </div>
+	      <div class="toolbar-row mt-16">
+		        <button id="approve_btn" type="button" class="success" disabled>Append Proposal to Knowledge Graph</button>
+	      </div>
+	    </div>
+
+	    <div class="panel mt-16">
+	      <h2>Knowledge Graph Preview</h2>
+	      <div class="graph-controls mb-8">
+        <div class="graph-controls-left">
+          <label>
+            <input id="showNewContextToggle" type="checkbox" />
+            Show full graph
+          </label>
+          <button id="resetViewBtn" type="button" class="secondary">Reset View</button>
+        </div>
+        <div id="kgHint" class="graph-count">Visible: 0 nodes, 0 edges.</div>
+      </div>
+      <div class="help">Tip: hover a node/edge to focus and show labels; click to lock focus; click empty space to clear.</div>
+      <div class="graph-legend" aria-label="Graph legend">
+        <span class="legend-item"><span class="legend-dot legend-old-node"></span>Existing node</span>
+        <span class="legend-item"><span class="legend-dot legend-new-node"></span>New node</span>
+        <span class="legend-item"><span class="legend-line legend-old-edge"></span>Existing edge</span>
+        <span class="legend-item"><span class="legend-line legend-new-edge"></span>New edge</span>
+      </div>
+      <div id="cy"></div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/cytoscape@3.29.2/dist/cytoscape.min.js"></script>
+  <script src="../js/graph.js?v=20260329-3"></script>
+  <script src="../js/shared.js?v=20260329-1"></script>
+  <script src="../js/extract.js?v=20260414-1"></script>
+</body>
+</html>
