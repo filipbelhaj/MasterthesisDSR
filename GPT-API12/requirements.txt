@@ -1,6 +1,0 @@
-# Backend runtime dependencies for TriExtract (Python 3.10+)
-fastapi
-openai
-pydantic
-python-multipart
-uvicorn
