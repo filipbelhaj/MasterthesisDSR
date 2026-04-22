@@ -16,4 +16,4 @@ EXTRACTOR_MODEL = "gpt-5.4"  # Main extraction model.
 # Generation behavior
 EXTRACTOR_TEMPERATURE = 0.1  # Lower is more deterministic; higher is more exploratory.
 EXTRACTOR_ROW_BUDGET_PREFERRED_MIN = 4  # Preferred lower bound for extractor proposal rows.
-EXTRACTOR_ROW_BUDGET_PREFERRED_MAX = 25  # Preferred upper bound for extractor proposal rows.
+EXTRACTOR_ROW_BUDGET_PREFERRED_MAX = 40  # Preferred upper bound for extractor proposal rows.
