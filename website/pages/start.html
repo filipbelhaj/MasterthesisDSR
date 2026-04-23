@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ORS Explorer</title>
+  <link rel="stylesheet" href="../css/styles.css?v=20260329-7" />
+  <link rel="shortcut icon" href="../favicon.ico" type="image/x-icon">
+</head>
+<body class="start-page">
+  <div class="wrap">
+    <div class="final-header">
+      <div class="header-left header-zone header-zone-left">
+        <span class="final-header-title">ORS Explorer</span>
+      </div>
+      <nav class="header-zone header-zone-center header-nav" aria-label="Navigation">
+        <a class="final-header-btn active" href="./start.html" aria-current="page"><span class="nav-step-index" aria-hidden="true">1</span><span class="nav-step-label">Configure</span></a>
+        <a id="startNavExtractBtn" class="final-header-btn" href="./extract.html" data-href="./extract.html"><span class="nav-step-index" aria-hidden="true">2</span><span class="nav-step-label">Extract</span></a>
+        <button class="final-header-btn" type="button" disabled aria-disabled="true" title="Available after you extract and apply a proposal."><span class="nav-step-index" aria-hidden="true">3</span><span class="nav-step-label">Export</span></button>
+      </nav>
+      <div class="header-zone header-zone-right"></div>
+    </div>
+  </div>
+  <main class="start-wrap">
+    <section class="start-grid">
+      <p id="startStatus" class="status mb-16" aria-live="polite"></p>
+      <article class="panel start-box start-hero">
+        <h2>Welcome to ORS Explorer</h2>
+        <p>
+          Organisational Rule System Explorer makes it easy to build and expand a Wikibase knowledge graph from text.
+          To get started, you can choose an ontology (in JSON format) that defines the concepts you want to extract.
+          If you prefer, you can simply use the default ontology.
+          If you already have a Wikibase knowledge graph, you can upload it and continue building on it.
+        </p>
+        <p class="start-followup">Follow these steps to use the tool:</p>
+        <div class="start-steps" aria-label="How to begin">
+          <div class="start-step">
+            <span class="start-step-num">1</span>
+            <span><strong>Configure (optional)</strong> Set an ontology that is used to define the concepts for the knowledge graph. You can also upload an existing knowledge graph to use as a starting point. If no knowledge graph is uploaded, ORS Explorer starts a new one.</span>
+          </div>
+          <div class="start-step">
+            <span class="start-step-num">2</span>
+            <span><strong>Extract</strong> Provide a text from which to extract a knowledge graph fragment, based on the supplied ontology. Add one or several fragments to the knowledge graph.</span>
+          </div>
+          <div class="start-step">
+            <span class="start-step-num">3</span>
+            <span><strong>Export</strong> Save the created knowledge graph in Wikidata format.</span>
+          </div>
+        </div>
+        <p id="startHealthStatus" class="status start-next-note" aria-live="polite"></p>
+      </article>
+
+        <p class="start-section-label">Configure</p>
+        <div class="start-grid-two">
+        <article class="panel start-box">
+            <h2>Upload Ontology</h2>
+            <p>Upload your Wikibase ontology file here if the server does not already have one loaded. It will be saved as the configured ontology file.</p>
+            <div class="ontology-guide">
+              <p>Copy the SPARQL query below, run it on your Wikibase, export the result as JSON, and upload it here.</p>
+              <p><strong>Note:</strong> replace <span class="mono">Q10</span> with the Q-id of your class entity (this is commented in the query). If the server does not already have <span class="mono">ontology.json</span>, upload one here before extracting.</p>
+              <div class="sparql-box-wrap">
+                <div class="panel-title-row sparql-box-head">
+                  <span class="sparql-box-label">SPARQL Query</span>
+                  <div class="toolbar-row sparql-box-actions">
+                    <span class="sparql-copy-status" data-copy-status-for="ontologySparql" aria-live="polite"></span>
+                    <button class="secondary sparql-copy-btn" type="button" data-copy-target="ontologySparql" data-copy-reset-ms="2200">Copy</button>
+                  </div>
+                </div>
+                <textarea id="ontologySparql" class="sparql-box" readonly spellcheck="false">PREFIX wd: &lt;https://organisational-rules.wikibase.cloud/entity/&gt;
+PREFIX wdt: &lt;https://organisational-rules.wikibase.cloud/prop/direct/&gt;
+PREFIX wikibase: &lt;http://wikiba.se/ontology#&gt;
+PREFIX bd: &lt;http://www.bigdata.com/rdf#&gt;
+
+SELECT ?entityType ?entity ?entityLabel ?entityDescription ?entityAltLabel
+WHERE {
+  {
+    # Make sure you rename Q10 to whatever Q your class entity is!!!
+    ?entity wdt:P1 wd:Q10 .
+    BIND("item" AS ?entityType)
+  }
+  UNION
+  {
+    ?entity a wikibase:Property .
+    BIND("property" AS ?entityType)
+  }
+
+  SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "en,sv,[AUTO_LANGUAGE]" .
+  }
+}
+ORDER BY ?entityType ?entityLabel</textarea>
+              </div>
+            </div>
+            <input id="ontologyFile" type="file" accept=".json,application/json" />
+            <button id="uploadOntologyBtn" type="button">Upload Ontology</button>
+            <p id="ontologyStatus" class="upload-status"></p>
+        </article>
+
+        <article class="panel start-box">
+            <h2>Upload Knowledge Graph (Optional)</h2>
+            <p>Upload your own Wikibase export to continue building on an existing knowledge graph.</p>
+            <div class="ontology-guide">
+              <p>If left empty, ORS Explorer will create a new knowledge graph. If you upload an existing knowledge base export, ORS Explorer will continue building on it.</p>
+              <p>Use the SPARQL query below to extract your full Wikibase as JSON, then upload the exported file here.</p>
+              <div class="sparql-box-wrap">
+                <div class="panel-title-row sparql-box-head">
+                  <span class="sparql-box-label">SPARQL Query</span>
+                  <div class="toolbar-row sparql-box-actions">
+                    <span class="sparql-copy-status" data-copy-status-for="querySparql" aria-live="polite"></span>
+                    <button class="secondary sparql-copy-btn" type="button" data-copy-target="querySparql" data-copy-reset-ms="2200">Copy</button>
+                  </div>
+                </div>
+                <textarea id="querySparql" class="sparql-box" readonly spellcheck="false">PREFIX wd: &lt;https://organisational-rules.wikibase.cloud/entity/&gt;
+PREFIX p:  &lt;https://organisational-rules.wikibase.cloud/prop/&gt;
+PREFIX ps: &lt;https://organisational-rules.wikibase.cloud/prop/statement/&gt;
+PREFIX pq: &lt;https://organisational-rules.wikibase.cloud/prop/qualifier/&gt;
+PREFIX wikibase: &lt;http://wikiba.se/ontology#&gt;
+PREFIX bd: &lt;http://www.bigdata.com/rdf#&gt;
+
+SELECT DISTINCT
+  ?item
+  ?itemLabel
+  ?property
+  ?value
+  ?qualifierProperty
+  ?qualifierValue
+  ?propertyLabel
+  ?valueLabel
+  ?qualifierPropertyLabel
+  ?qualifierValueLabel
+WHERE {
+  
+  ?item ?p ?statement .
+  FILTER(STRSTARTS(STR(?p), STR(p:)))
+
+  ?statement ?ps ?value .
+  FILTER(STRSTARTS(STR(?ps), STR(ps:)))
+
+  OPTIONAL {
+    ?statement ?qualifierProperty ?qualifierValue .
+    FILTER(STRSTARTS(STR(?qualifierProperty), STR(pq:)))
+  }
+
+  # Convert ps:Pxxx -> wd:Pxxx
+  BIND(
+    IRI(REPLACE(STR(?ps), STR(ps:), STR(wd:)))
+    AS ?property
+  )
+
+  SERVICE wikibase:label {
+    bd:serviceParam wikibase:language "en,sv,[AUTO_LANGUAGE]" .
+  }
+}</textarea>
+              </div>
+            </div>
+            <input id="queryFile" type="file" accept=".json,application/json" />
+            <button id="uploadQueryBtn" type="button">Upload Knowledge Graph</button>
+            <p id="queryStatus" class="upload-status"></p>
+        </article>
+        </div>
+    </section>
+
+  </main>
+  <script src="../js/ui.js?v=20260329-1"></script>
+  <script src="../js/shared.js?v=20260329-1"></script>
+  <script src="../js/start.js?v=20260329-7"></script>
+</body>
+</html>
