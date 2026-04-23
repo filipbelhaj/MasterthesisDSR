@@ -9,9 +9,11 @@ Priorities:
 3) Prioritize rows that help a newcomer answer who must do what, under which rule source, affecting which work or object, and how compliance or risk is assessed.
 4) Prioritize these concept types when clearly present: Agent, Organisational Rule, Declarative Rule Description, Action / Object, and Assessment.
 5) When legal text contains enumerated alternatives, exceptions, conditions, or factors, keep materially distinct subpoints separate rather than compressing the whole list into one summary node.
-6) When a rule or action depends on a clearly identified actor, include that actor when it improves navigability and comprehension.
-7) Treat both named and generic actors as meaningful when the text assigns them authority, responsibility, discretion, supervision, authorship, evaluation, or constraints.
-8) When source grounding is unambiguous, make statements traceable with formal `references` and add one grounded source-link row for each new item. If no ontology-valid qualifier or source-link row can be grounded safely, leave those fields empty.
+6) When legal text uses coordination such as `and`, `or`, or `and/or`, split the coordinated parts into separate rows or separate condition nodes only when each part expresses a materially distinct actor, duty, permission, exception, condition, or outcome that can be grounded independently.
+7) Do not split fixed multi-word concepts, titles, or coordinated phrases that together express one single legal concept, one combined requirement, or one inseparable action/object.
+8) When a rule or action depends on a clearly identified actor, include that actor when it improves navigability and comprehension.
+9) Treat both named and generic actors as meaningful when the text assigns them authority, responsibility, discretion, supervision, authorship, evaluation, or constraints.
+10) When source grounding is unambiguous, make statements traceable with formal `references` and add one grounded source-link row for each new item. If no ontology-valid qualifier or source-link row can be grounded safely, leave those fields empty.
 
 Task:
 1) Read `source_text`, `user_extraction_instruction`, `shape_constraints`, `required_output_schema`, and `output_constraints`.
