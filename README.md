@@ -66,10 +66,40 @@ ORS Explorer is designed for **incremental graph building**, putting you in cont
 
 ## Important Notes
 
-*   **Temporary Work:** Your session's work (proposals and graph changes) is stored in the tool's memory. Restarting the tool or uploading a new ontology/query file will clear your current session's progress.
+*   **Session Storage:** Session work is stored in local SQLite under `data/app.sqlite3` by default and expires after 7 days. Session uploads are stored under `data/uploads/<session_id>/`.
 *   **Server Connection Required:** The tool's user interface must be accessed through the FastAPI server (e.g., `http://127.0.0.1:8000/`), not directly as a local file (`file://`).
 *   **Human Oversight is Key:** While the AI is powerful and constrained, your review and approval are always essential to ensure the accuracy and quality of your knowledge graph.
 *   **Deletion Export:** If you delete rows, they will be included in the JSON export but not in the QuickStatements output (as QuickStatements is primarily for adding/modifying, not deleting).
+
+## Run Locally
+
+1. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+2. Copy `.env.example` to `.env` and set `OPENAI_API_KEY`.
+
+3. Start the app:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
+```
+
+4. Open:
+
+```text
+http://127.0.0.1:8000/
+```
+
+If `user_data_editable/ontology.json` is missing or invalid, the app still boots, but proposal generation stays blocked until you upload a valid ontology.
+
+## Project Docs
+
+- End-user and setup overview: [README.md](./README.md)
+- Deployment details: [DEPLOYMENT.md](./DEPLOYMENT.md)
+- Maintainer architecture and request flow: [MAINTAIN.md](./MAINTAIN.md)
 
 ## Deployment
 

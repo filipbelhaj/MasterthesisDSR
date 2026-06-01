@@ -5,22 +5,36 @@ import re
 from difflib import SequenceMatcher
 from typing import Any, Dict, List, Optional, Tuple
 from ..core.config import ALLOW_DELETE
-from ..state import canonical_row_key, dedupe_rows, normalize_key_value
-from .ontology import ONTOLOGY, STATEMENT_FIELDS, clean_reference_entry, clean_statement_row
-from .ontology_rules import (
-    DECLARATIVE_SOURCE_CLASS_LABELS,
+from ..core.ontology_config import (
+    DECLARED_BY_LABEL,
+    DESCRIBED_BY_LABEL,
     INSTANCE_OF_CLASS_LABELS,
     MODEL_CONSTRUCT_PROPERTY_LABELS,
     REFERENCE_ALLOWED_CLASS_LABELS,
-    RULE_LIKE_CLASS_LABELS,
     SOURCE_PROPERTY_LABELS,
     SUBCLASS_OF_CLASS_LABELS,
+    conflicting_modeling_row_warning,
+    is_new_item_placeholder,
+    preferred_source_property_label,
+    reference_property_labels_preview,
+    required_modeling_row_warning,
+    source_property_labels_preview,
 )
+from ..state import canonical_row_key, dedupe_rows, normalize_key_value
+from .ontology import ONTOLOGY, STATEMENT_FIELDS, clean_reference_entry, clean_statement_row
 
 CHANGE_ACTIONS = ("create", "edit", "link", "delete", "uncertain")
 ENTITY_REFERENCE_RE = re.compile(r"^(?:Q\d+|https?://.+/entity/Q\d+)$", re.IGNORECASE)
 
 def compact_evidence(evidence_list: Any) -> List[str]:
+    """Deduplicate and trim reasoning evidence snippets.
+
+    Args:
+        evidence_list: Raw evidence entries from model output.
+
+    Returns:
+        Up to six cleaned evidence snippets.
+    """
     raw = [
         snippet.strip()
         for snippet in (
@@ -73,6 +87,14 @@ def compact_evidence(evidence_list: Any) -> List[str]:
     return deduped[:6]
 
 def statement_parts(row: Any) -> Tuple[str, Optional[str]]:
+    """Build a compact subject and statement preview for UI text.
+
+    Args:
+        row: Statement row to summarize.
+
+    Returns:
+        A subject label and short statement preview.
+    """
     if not isinstance(row, dict):
         return "Unknown item", None
 
@@ -92,6 +114,15 @@ def statement_parts(row: Any) -> Tuple[str, Optional[str]]:
     return subject, statement
 
 def what_label(action: str, entity_scope: Any) -> str:
+    """Map a change action into a user-facing label.
+
+    Args:
+        action: Change action name.
+        entity_scope: Change scope from the reasoning payload.
+
+    Returns:
+        A short label for the change summary.
+    """
     if action == "create":
         return "Create entity" if entity_scope == "entity" else "Create statement"
     if action == "edit":
@@ -158,12 +189,12 @@ def _validate_reference_entries(
         allowed_labels = _reference_allowed_labels(property_label)
         if not allowed_labels:
             warnings.append(
-                f"proposed_rows[{row_index}].references[{ref_index}] ignored (property must be described by, declared by, or defined by)"
+                f"proposed_rows[{row_index}].references[{ref_index}] ignored (property must be {reference_property_labels_preview()})"
             )
             continue
 
         value = cleaned.get("value")
-        if not isinstance(value, str) or not value.strip() or value.startswith("NEW:"):
+        if not isinstance(value, str) or not value.strip() or is_new_item_placeholder(value):
             warnings.append(
                 f"proposed_rows[{row_index}].references[{ref_index}] ignored (reference value must be a grounded entity id, source title, or URL)"
             )
@@ -188,6 +219,15 @@ def validate_llm_output(
     *,
     base_rows: Optional[List[Dict[str, Any]]] = None,
 ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[str]]:
+    """Validate and normalize raw extractor output.
+
+    Args:
+        llm_out: Parsed JSON object returned by the extractor.
+        base_rows: Existing KB rows used for reference validation.
+
+    Returns:
+        Cleaned proposal rows, raw change entries, and validation warnings.
+    """
     raw_rows = llm_out.get("proposed_rows", [])
     raw_changes = llm_out.get("changes", [])
     warnings: List[str] = []
@@ -237,7 +277,7 @@ def _placeholder_subject_groups(rows: List[Dict[str, Any]]) -> Dict[str, List[Di
         if not isinstance(row, dict):
             continue
         item = row.get("item")
-        if isinstance(item, str) and item.startswith("NEW:"):
+        if is_new_item_placeholder(item):
             out.setdefault(item, []).append(row)
     return out
 
@@ -286,6 +326,16 @@ def augment_row_references(
     *,
     base_rows: Optional[List[Dict[str, Any]]] = None,
 ) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Add grounded statement references when one source candidate is clear.
+
+    Args:
+        rows: Proposal rows to augment.
+        source_candidate: Chosen source entity, if any.
+        base_rows: Existing KB rows used for class lookup.
+
+    Returns:
+        Updated rows and any augmentation warnings.
+    """
     if not source_candidate:
         return rows, []
 
@@ -294,8 +344,8 @@ def augment_row_references(
     if not isinstance(source_entity, str) or not source_entity.strip():
         return rows, []
 
-    described_by_uri = _property_uri_for_label("described by")
-    declared_by_uri = _property_uri_for_label("declared by")
+    described_by_uri = _property_uri_for_label(DESCRIBED_BY_LABEL)
+    declared_by_uri = _property_uri_for_label(DECLARED_BY_LABEL)
     if not described_by_uri:
         return rows, []
 
@@ -321,14 +371,9 @@ def augment_row_references(
             continue
 
         item_key = normalize_key_value(updated.get("item"))
-        subject_classes = placeholder_classes.get(updated.get("item"), set()) if isinstance(updated.get("item"), str) and updated.get("item", "").startswith("NEW:") else set(base_class_labels.get(item_key, []))
-        use_declared_by = bool(
-            declared_by_uri
-            and subject_classes.intersection(RULE_LIKE_CLASS_LABELS)
-            and source_class_labels.intersection(DECLARATIVE_SOURCE_CLASS_LABELS)
-        )
-        property_label = "declared by" if use_declared_by else "described by"
-        property_uri = declared_by_uri if use_declared_by else described_by_uri
+        subject_classes = placeholder_classes.get(updated.get("item"), set()) if is_new_item_placeholder(updated.get("item")) else set(base_class_labels.get(item_key, []))
+        property_label = preferred_source_property_label(subject_classes, source_class_labels)
+        property_uri = declared_by_uri if property_label == DECLARED_BY_LABEL else described_by_uri
         if not property_uri:
             augmented.append(updated)
             continue
@@ -350,6 +395,15 @@ def augment_new_item_source_rows(
     rows: List[Dict[str, Any]],
     source_candidate: Optional[Dict[str, Any]],
 ) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Add source-link rows for new placeholder subjects when required.
+
+    Args:
+        rows: Proposal rows to augment.
+        source_candidate: Chosen source entity, if any.
+
+    Returns:
+        Updated rows and any augmentation warnings.
+    """
     if not source_candidate:
         return rows, []
 
@@ -358,8 +412,8 @@ def augment_new_item_source_rows(
     if not isinstance(source_entity, str) or not source_entity.strip():
         return rows, []
 
-    described_by_uri = _property_uri_for_label("described by")
-    declared_by_uri = _property_uri_for_label("declared by")
+    described_by_uri = _property_uri_for_label(DESCRIBED_BY_LABEL)
+    declared_by_uri = _property_uri_for_label(DECLARED_BY_LABEL)
     if not described_by_uri:
         return rows, []
 
@@ -376,13 +430,8 @@ def augment_new_item_source_rows(
             continue
 
         subject_classes = set(_subject_model_class_labels(subject_rows))
-        use_declared_by = bool(
-            declared_by_uri
-            and subject_classes.intersection(RULE_LIKE_CLASS_LABELS)
-            and source_class_labels.intersection(DECLARATIVE_SOURCE_CLASS_LABELS)
-        )
-        property_label = "declared by" if use_declared_by else "described by"
-        property_uri = declared_by_uri if use_declared_by else described_by_uri
+        property_label = preferred_source_property_label(subject_classes, source_class_labels)
+        property_uri = declared_by_uri if property_label == DECLARED_BY_LABEL else described_by_uri
         if not property_uri:
             continue
 
@@ -406,6 +455,16 @@ def validate_required_new_item_rows(
     existing_rows: Optional[List[Dict[str, Any]]] = None,
     require_source: bool = False,
 ) -> List[str]:
+    """Check that new placeholder subjects include required modeling rows.
+
+    Args:
+        rows: Rows to validate.
+        existing_rows: Existing rows for the same placeholders, if any.
+        require_source: Whether a source-link row is mandatory.
+
+    Returns:
+        Validation warnings for missing required rows.
+    """
     warnings: List[str] = []
     existing_subject_groups = _placeholder_subject_groups(existing_rows or [])
     for subject, subject_rows in _placeholder_subject_groups(rows).items():
@@ -416,21 +475,17 @@ def validate_required_new_item_rows(
             if _row_uses_property_label(row, MODEL_CONSTRUCT_PROPERTY_LABELS)
         ]
         if not model_rows:
-            warnings.append(
-                f'New item "{subject_label}" is missing a required model row (`instance of Class` or `subclass of Class`).'
-            )
+            warnings.append(required_modeling_row_warning(subject_label))
         elif any(_row_uses_property_label(row, INSTANCE_OF_CLASS_LABELS) for row in model_rows) and any(
             _row_uses_property_label(row, SUBCLASS_OF_CLASS_LABELS) for row in model_rows
         ):
-            warnings.append(
-                f'New item "{subject_label}" has both `instance of Class` and `subclass of Class`; review which one should remain.'
-            )
+            warnings.append(conflicting_modeling_row_warning(subject_label))
 
         if require_source and not any(
             _row_uses_property_label(row, SOURCE_PROPERTY_LABELS) for row in effective_subject_rows
         ):
             warnings.append(
-                f'New item "{subject_label}" is missing a required source row (`described by` or `declared by`).'
+                f'New item "{subject_label}" is missing a required source row ({source_property_labels_preview()}).'
             )
 
     return warnings
@@ -475,10 +530,12 @@ def _proposal_row_for_change(change: Dict[str, Any], proposal_rows: List[Dict[st
         return None
     return proposal_rows[index]
 
-def _iter_action_changes(changes: List[Dict[str, Any]], action: str):
+def _iter_action_changes(changes: List[Dict[str, Any]], action: str) -> List[Dict[str, Any]]:
+    matching_changes: List[Dict[str, Any]] = []
     for change in changes:
         if isinstance(change, dict) and change.get("action") == action:
-            yield change
+            matching_changes.append(change)
+    return matching_changes
 
 def _edit_match_candidates(
     base_rows: List[Dict[str, Any]],
@@ -660,7 +717,21 @@ def _append_added_rows(
         added_keys.add(row_key)
     return added_rows, duplicate_warnings
 
-def merge_proposal_into_base(base_rows, proposal_rows, changes):
+def merge_proposal_into_base(
+    base_rows: List[Dict[str, Any]],
+    proposal_rows: List[Dict[str, Any]],
+    changes: List[Dict[str, Any]],
+) -> Dict[str, Any]:
+    """Merge validated proposal rows into a base KB snapshot.
+
+    Args:
+        base_rows: Existing KB rows before the proposal.
+        proposal_rows: Cleaned proposal rows to merge.
+        changes: Raw change metadata aligned to the proposal rows.
+
+    Returns:
+        Merged rows, structured diff details, and merge warnings.
+    """
     base_dict_rows = [row for row in base_rows if isinstance(row, dict)]
     base_keys = {canonical_row_key(row) for row in base_dict_rows}
     base_rows_by_key = {
@@ -724,7 +795,21 @@ def _reasoning_change_entry(change: Dict[str, Any], proposal_row: Optional[Dict[
         "needs_review": change.get("review_flag"),
     }
 
-def normalize_reasoning_report(raw_changes, proposal_rows, validation_warnings):
+def normalize_reasoning_report(
+    raw_changes: List[Dict[str, Any]],
+    proposal_rows: List[Dict[str, Any]],
+    validation_warnings: List[str],
+) -> Dict[str, Any]:
+    """Build a UI-friendly reasoning report from raw change metadata.
+
+    Args:
+        raw_changes: Raw change entries from the extractor.
+        proposal_rows: Cleaned proposal rows aligned to those changes.
+        validation_warnings: Validation or merge warnings to surface.
+
+    Returns:
+        A normalized reasoning summary for the API response.
+    """
     counts = Counter()
     changes_out = []
     for change in raw_changes:

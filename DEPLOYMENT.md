@@ -19,8 +19,8 @@ You need:
 
 Important app behavior:
 
-- Sessions are stored in server memory, so a restart clears active sessions.
-- `ontology.json` and `query.json` are file-based. In hosted environments, keep them on persistent storage.
+- Sessions, proposals, and uploads are stored in local SQLite/files under `APP_DATA_DIR`.
+- `ontology.json`, `query.json`, and `APP_DATA_DIR` should all point at persistent storage in hosted environments.
 
 ## Local Docker test
 
@@ -57,7 +57,7 @@ The included `render.yaml` is set up for a Docker-based web service and persiste
 - deploys this repo as a web service
 - starts the app with Docker
 - exposes `/health` as the health check
-- stores `ontology.json` and `query.json` on a persistent disk at `/data`
+- stores `ontology.json`, `query.json`, sessions, proposals, and uploads on a persistent disk at `/data`
 
 ### Steps
 
@@ -74,7 +74,7 @@ If `/data/ontology.json` does not exist yet, the app will still boot, but propos
 
 ### Why `/data`
 
-The app can write uploaded JSON files to the configured paths. Using `/data` avoids mounting a persistent disk over the source tree.
+The app can write uploaded JSON files and SQLite session state to the configured paths. Using `/data` avoids mounting a persistent disk over the source tree.
 
 ## Manual non-Docker deployment
 
@@ -103,11 +103,18 @@ HOST=0.0.0.0
 PORT=8000
 ONTOLOGY_FILE=/absolute/or/persistent/path/ontology.json
 DEFAULT_QUERY_FILE=/absolute/or/persistent/path/query.json
+APP_DATA_DIR=/absolute/or/persistent/path/app-data
+```
+
+Local development command:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ## Production caveats
 
-- In-memory sessions mean users can lose in-progress work if the service restarts.
+- Sessions are persisted in SQLite, but users can still lose in-progress work if the configured data directory is not on persistent storage.
 - A persistent disk usually means one instance only for this app shape.
 - CORS is currently wide open. That is convenient for deployment, but if you later split frontend and backend across domains, you may want to lock it down.
 

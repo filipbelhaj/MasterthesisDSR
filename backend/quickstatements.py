@@ -3,8 +3,12 @@
 from __future__ import annotations
 from datetime import datetime
 import re
-from typing import Any, Iterable
+from typing import Any, Iterable, Iterator
 from urllib.parse import urlparse
+from .core.ontology_config import (
+    creation_context_property_label,
+    creation_context_value_prefix,
+)
 from .extractor.ontology import ONTOLOGY
 from .state import canonical_row_key, norm
 
@@ -34,8 +38,6 @@ ISO_DATETIME_RE = re.compile(
     r"^(?P<year>\d{4,})-(?P<month>\d{2})-(?P<day>\d{2})T"
     r"(?P<hour>\d{2}):(?P<minute>\d{2})(?::(?P<second>\d{2}))?Z$"
 )
-CREATION_CONTEXT_PROPERTY = "P143"
-CREATION_CONTEXT_PREFIX = "semi-automatic: ORS Explorer"
 
 def _normalize_entity_token(value: Any) -> str:
     if value is None:
@@ -145,7 +147,14 @@ def _qs_term(token: str, placeholder_to_qs_target: dict[str, str]) -> str:
 
 def _creation_context_literal() -> str:
     timestamp = datetime.now().astimezone().isoformat(timespec="seconds")
-    return f"{CREATION_CONTEXT_PREFIX}; {timestamp}"
+    return f"{creation_context_value_prefix()}; {timestamp}"
+
+
+def _creation_context_property_token() -> str:
+    return _normalize_property_token(
+        creation_context_property_label(),
+        label=creation_context_property_label(),
+    )
 
 def _is_placeholder(token: Any) -> bool:
     return isinstance(token, str) and token.startswith(PLACEHOLDER_PREFIXES)
@@ -192,7 +201,7 @@ def _append_unique_mapping(out: dict[str, list[str]], key: str, value: str) -> N
     if value not in values:
         values.append(value)
 
-def _iter_labeled_entities(rows: Iterable[dict[str, Any]]):
+def _iter_labeled_entities(rows: Iterable[dict[str, Any]]) -> Iterator[tuple[str, str]]:
     for row in rows:
         if not isinstance(row, dict):
             continue
@@ -345,7 +354,7 @@ def _materialize_reference_placeholders(rows: Iterable[dict[str, Any]]) -> list[
 
     return prepared_rows
 
-def _iter_placeholder_entries(row: dict[str, Any]):
+def _iter_placeholder_entries(row: dict[str, Any]) -> Iterator[tuple[str, str]]:
     for entity_key, label_key in PLACEHOLDER_LABEL_FIELDS:
         token = row.get(entity_key)
         if not _is_placeholder(token):
@@ -467,6 +476,14 @@ def _sanitize_references(
     return warnings
 
 def collect_placeholder_manifest(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, str]], list[str]]:
+    """Collect placeholder labels that require Step 1 item creation.
+
+    Args:
+        rows: Rows that may contain placeholder subjects or references.
+
+    Returns:
+        Placeholder manifest entries and any label-conflict warnings.
+    """
     manifest: list[dict[str, str]] = []
     warnings: list[str] = []
     seen: dict[str, str] = {}
@@ -491,6 +508,14 @@ def collect_placeholder_manifest(rows: Iterable[dict[str, Any]]) -> tuple[list[d
     return manifest, warnings
 
 def placeholder_manifest_template(rows: Iterable[dict[str, Any]]) -> tuple[list[dict[str, str]], list[str]]:
+    """Build an empty binding template for placeholder resolution.
+
+    Args:
+        rows: Rows that may contain placeholders.
+
+    Returns:
+        Placeholder entries with blank QID slots and any warnings.
+    """
     manifest, warnings = collect_placeholder_manifest(rows)
     return [
         {"placeholder": entry["placeholder"], "label": entry["label"], "qid": ""}
@@ -498,6 +523,15 @@ def placeholder_manifest_template(rows: Iterable[dict[str, Any]]) -> tuple[list[
     ], warnings
 
 def placeholder_create_quickstatements(rows: Iterable[dict[str, Any]], lang: str = "en") -> tuple[str, list[dict[str, str]], list[str]]:
+    """Build Step 1 QuickStatements for creating placeholder items.
+
+    Args:
+        rows: Rows that may contain placeholder subjects or references.
+        lang: Label language code for created items.
+
+    Returns:
+        Step 1 QuickStatements text, manifest entries, and warnings.
+    """
     prepared_rows = _materialize_reference_placeholders(rows)
     manifest, warnings = collect_placeholder_manifest(prepared_rows)
     lines: list[str] = []
@@ -509,6 +543,15 @@ def apply_placeholder_bindings(
     rows: Iterable[dict[str, Any]],
     bindings: dict[str, str],
 ) -> list[dict[str, Any]]:
+    """Replace placeholder ids with bound QIDs in rows and references.
+
+    Args:
+        rows: Rows that may contain placeholders.
+        bindings: Mapping from placeholder tokens to resolved QIDs.
+
+    Returns:
+        Rows with placeholder bindings applied.
+    """
     out: list[dict[str, Any]] = []
 
     for row in _materialize_reference_placeholders(rows):
@@ -544,11 +587,15 @@ def sanitize_rows_for_quickstatements(
     allow_subject_placeholders: bool = True,
     reference_rows: Iterable[dict[str, Any]] | None = None,
 ) -> tuple[list[dict[str, Any]], list[str], dict[int, int | None]]:
-    """
-    Remove or downgrade rows that cannot be represented safely in Wikibase Cloud
-    QuickStatements:
-    - brand-new placeholder objects (`value = NEW:*`) are dropped
-    - brand-new placeholder qualifier values are removed from the row
+    """Drop or simplify rows that cannot be exported safely.
+
+    Args:
+        rows: Rows to sanitize for export.
+        allow_subject_placeholders: Whether subject placeholders may remain.
+        reference_rows: Existing rows used to infer entity-valued properties.
+
+    Returns:
+        Sanitized rows, export warnings, and original-to-sanitized index mapping.
     """
     row_list = [row for row in rows if isinstance(row, dict)]
     reference_row_list = [row for row in (reference_rows or []) if isinstance(row, dict)]
@@ -711,6 +758,17 @@ def build_step2_quickstatements(
     lang: str = "en",
     reference_rows: Iterable[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
+    """Build Step 2 QuickStatements after placeholder QIDs are known.
+
+    Args:
+        rows: Rows to export.
+        bindings: Optional placeholder-to-QID bindings.
+        lang: Label language code for created items.
+        reference_rows: Existing rows used to infer entity-valued properties.
+
+    Returns:
+        Step 2 QuickStatements text, warnings, and unresolved placeholders.
+    """
     normalized_bindings, binding_warnings = _normalize_bindings(bindings)
     bound_rows = apply_placeholder_bindings(rows, normalized_bindings)
     # Step 2 only works after placeholder subjects are rebound to real QIDs; any
@@ -782,9 +840,10 @@ def _row_to_quickstatements_parts(
                 placeholder_to_qs_target=placeholder_to_qs_target,
             ),
         ])
-    if creation_context and qp != CREATION_CONTEXT_PROPERTY:
+    creation_context_property = _creation_context_property_token()
+    if creation_context and creation_context_property and qp != creation_context_property:
         parts.extend([
-            CREATION_CONTEXT_PROPERTY,
+            creation_context_property,
             _qs_term(creation_context, placeholder_to_qs_target),
         ])
     return parts
@@ -814,7 +873,15 @@ def _append_placeholder_subject_rows(
             lines.append("\t".join(parts))
 
 def rows_to_quickstatements(rows: Iterable[dict[str, Any]], lang: str = "en") -> str:
-    """Build importable QuickStatements from finalized rows."""
+    """Build importable QuickStatements from finalized rows.
+
+    Args:
+        rows: Finalized rows ready for export.
+        lang: Label language code for created items.
+
+    Returns:
+        QuickStatements text ready for import.
+    """
     lines: list[str] = []
     row_list = [row for row in rows if isinstance(row, dict)]
     placeholder_groups: dict[str, list[dict[str, Any]]] = {}

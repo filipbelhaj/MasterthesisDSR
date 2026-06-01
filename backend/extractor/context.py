@@ -5,7 +5,7 @@ import logging
 import math
 import re
 from difflib import SequenceMatcher
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple
 from ..core.config import (
     EMBEDDING_MODEL,
     EMBEDDING_RERANK_CANDIDATES,
@@ -15,15 +15,18 @@ from ..core.config import (
     ROW_EMBEDDING_CACHE_MAX,
     get_client,
 )
-from ..state import canonical_row_key, fts_candidate_indices, norm, normalize_key_value
-from .ontology import ONTOLOGY, STATEMENT_FIELDS
-from .ontology_rules import (
-    ACTOR_CLASS_LABELS,
+from ..core.ontology_config import (
+    actor_class_labels,
     CLASSIFICATION_PROPERTY_LABELS,
     CONTEXT_MODEL_CONSTRUCT_PROPERTY_LABELS,
+    NEW_ITEM_PLACEHOLDER_PATTERN,
     SOURCE_LIKE_MODEL_CONSTRUCT_LABELS,
     SOURCE_LIKE_MODEL_CONSTRUCT_PRIORITY,
+    is_new_item_placeholder,
+    new_item_placeholder,
 )
+from ..state import canonical_row_key, fts_candidate_indices, norm, normalize_key_value
+from .ontology import ONTOLOGY, STATEMENT_FIELDS
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,12 +44,17 @@ ROMAN_NUMERAL_RE = re.compile(r"(?i)^[ivxlcdm]+$")
 INLINE_WHITESPACE_RE = re.compile(r"[ \t\f\v]+")
 NEWLINE_PADDING_RE = re.compile(r"[ \t]*\n[ \t]*")
 MULTI_NEWLINE_RE = re.compile(r"\n{3,}")
-PLACEHOLDER_ENTITY_RE = re.compile(r"^NEW:entity_(\d+)$")
+PLACEHOLDER_ENTITY_RE = re.compile(NEW_ITEM_PLACEHOLDER_PATTERN)
 TITLE_TOKEN_RE = re.compile(r"(?u)[^\W_]+(?:-[^\W_]+)*")
 EMBEDDING_DEGRADED_WARNING = "Semantic reranking was skipped because embeddings could not be generated."
 ROW_EMBEDDING_CACHE: "OrderedDict[Tuple[Any, ...], List[float]]" = OrderedDict()
 
 def clear_row_embedding_cache() -> None:
+    """Clear the cached row embeddings used for reranking.
+
+    Returns:
+        None.
+    """
     ROW_EMBEDDING_CACHE.clear()
 
 def _get_cached_row_embedding(key: Tuple[Any, ...]) -> Optional[List[float]]:
@@ -66,15 +74,42 @@ def _store_row_embedding(key: Tuple[Any, ...], vector: List[float]) -> None:
         ROW_EMBEDDING_CACHE.popitem(last=False)
 
 def append_unique_mapping(out: Dict[str, List[str]], key: str, value: str) -> None:
+    """Append a value to a mapping list only once.
+
+    Args:
+        out: Mapping of keys to ordered unique values.
+        key: Mapping key to update.
+        value: Value to append if missing.
+
+    Returns:
+        None.
+    """
     values = out.setdefault(key, [])
     if value not in values:
         values.append(value)
 
 def append_unique_text(out: List[str], value: str) -> None:
+    """Append a string to a list only once.
+
+    Args:
+        out: Output list to update.
+        value: Text value to append if missing.
+
+    Returns:
+        None.
+    """
     if value not in out:
         out.append(value)
 
 def normalize_label_for_match(label: Any) -> str:
+    """Normalize text for label matching.
+
+    Args:
+        label: Raw label text or value.
+
+    Returns:
+        Casefolded alphanumeric text with collapsed whitespace.
+    """
     if label is None:
         return ""
     text = str(label).casefold()
@@ -82,6 +117,14 @@ def normalize_label_for_match(label: Any) -> str:
     return " ".join(text.split())
 
 def normalize_input_text(input_text: str) -> str:
+    """Normalize source text before retrieval or prompting.
+
+    Args:
+        input_text: Raw user-provided source text.
+
+    Returns:
+        Text with normalized newlines and whitespace.
+    """
     text = (input_text or "").replace("\r\n", "\n").replace("\r", "\n")
     text = NEWLINE_PADDING_RE.sub("\n", text)
     text = INLINE_WHITESPACE_RE.sub(" ", text)
@@ -92,6 +135,15 @@ def _normalized_haystack(text: str, limit: int = 12000) -> str:
     return normalize_label_for_match(text)[:limit]
 
 def truncate_str(value: Any, limit: int) -> Any:
+    """Trim long strings while leaving non-strings unchanged.
+
+    Args:
+        value: Value to truncate when it is a string.
+        limit: Maximum string length.
+
+    Returns:
+        A shortened string or the original non-string value.
+    """
     if not isinstance(value, str):
         return value
     text = value.strip()
@@ -99,7 +151,7 @@ def truncate_str(value: Any, limit: int) -> Any:
         return text
     return text[: max(0, limit - 1)].rstrip() + "…"
 
-def _iter_clean_labels(base_rows: List[Dict[str, Any]], label_key: str):
+def _iter_clean_labels(base_rows: List[Dict[str, Any]], label_key: str) -> Iterator[str]:
     for row in base_rows:
         if not isinstance(row, dict):
             continue
@@ -109,7 +161,11 @@ def _iter_clean_labels(base_rows: List[Dict[str, Any]], label_key: str):
             if cleaned:
                 yield cleaned
 
-def _iter_labeled_entities(base_rows: List[Dict[str, Any]], *, entity_filter):
+def _iter_labeled_entities(
+    base_rows: List[Dict[str, Any]],
+    *,
+    entity_filter: Callable[[Any], bool],
+) -> Iterator[Tuple[Any, str]]:
     for row in base_rows:
         if not isinstance(row, dict):
             continue
@@ -318,6 +374,16 @@ def structured_reference_style_examples(
     *,
     limit: int = 6,
 ) -> List[Dict[str, Any]]:
+    """Sample how structured reference entities are modeled in the KB.
+
+    Args:
+        entity_catalog: Matched entities from the current input.
+        base_rows: Existing KB rows to inspect.
+        limit: Maximum number of examples to return.
+
+    Returns:
+        Compact structured-reference examples for prompt guidance.
+    """
     style = _structured_reference_style_index(base_rows)
     if not style["item_kinds"] or limit <= 0:
         return []
@@ -345,6 +411,15 @@ def structured_reference_style_examples(
     return out
 
 def existing_item_labels(input_text: str, base_rows: List[Dict[str, Any]]) -> List[str]:
+    """Collect existing item labels that appear in the input text.
+
+    Args:
+        input_text: Source text being processed.
+        base_rows: Existing KB rows to inspect.
+
+    Returns:
+        Matching item labels in first-seen order.
+    """
     haystack = _normalized_haystack(input_text)
     if not haystack:
         return []
@@ -364,6 +439,16 @@ def existing_entity_catalog_for_input(
     base_rows: List[Dict[str, Any]],
     limit: int,
 ) -> List[Dict[str, str]]:
+    """Find reusable entity ids whose labels appear in the input.
+
+    Args:
+        input_text: Source text being processed.
+        base_rows: Existing KB rows to inspect.
+        limit: Maximum number of catalog entries to return.
+
+    Returns:
+        Matched label-to-entity entries for reuse in prompting.
+    """
     if limit <= 0:
         return []
 
@@ -411,8 +496,9 @@ def _ontology_entity_keys_for_labels(labels: Tuple[str, ...]) -> set[str]:
     return keys
 
 def _actor_item_keys(base_rows: List[Dict[str, Any]]) -> set[str]:
-    actor_class_label_keys = {normalize_label_for_match(label) for label in ACTOR_CLASS_LABELS}
-    actor_class_entity_keys = _ontology_entity_keys_for_labels(ACTOR_CLASS_LABELS)
+    configured_actor_class_labels = actor_class_labels()
+    actor_class_label_keys = {normalize_label_for_match(label) for label in configured_actor_class_labels}
+    actor_class_entity_keys = _ontology_entity_keys_for_labels(configured_actor_class_labels)
     classification_property_label_keys = {
         normalize_label_for_match(label) for label in CLASSIFICATION_PROPERTY_LABELS
     }
@@ -447,6 +533,16 @@ def existing_actor_catalog_for_input(
     base_rows: List[Dict[str, Any]],
     limit: int,
 ) -> List[Dict[str, str]]:
+    """Find reusable actor entities that appear in the input.
+
+    Args:
+        input_text: Source text being processed.
+        base_rows: Existing KB rows to inspect.
+        limit: Maximum number of actor entries to return.
+
+    Returns:
+        Matching actor label-to-entity entries.
+    """
     if limit <= 0:
         return []
 
@@ -487,7 +583,15 @@ def existing_actor_catalog_for_input(
 
     return out
 
-def entity_ids_from_catalog(entity_catalog: List[Dict[str, str]]) -> set:
+def entity_ids_from_catalog(entity_catalog: List[Dict[str, str]]) -> set[Any]:
+    """Extract normalized entity ids from a catalog.
+
+    Args:
+        entity_catalog: Entity catalog entries with `entity` values.
+
+    Returns:
+        Normalized entity ids for fast membership checks.
+    """
     return {
         normalize_key_value(entry.get("entity"))
         for entry in entity_catalog
@@ -517,6 +621,16 @@ def source_candidates_for_input(
     base_rows: List[Dict[str, Any]],
     limit: int,
 ) -> List[Dict[str, Any]]:
+    """Find likely source entities mentioned in the input.
+
+    Args:
+        input_text: Source text being processed.
+        base_rows: Existing KB rows to inspect.
+        limit: Maximum number of source candidates to return.
+
+    Returns:
+        Ranked source-like entities grounded in the input text.
+    """
     if limit <= 0:
         return []
 
@@ -573,9 +687,13 @@ def _expand_bare_entity_id(value: Any, entity_prefix: Optional[str]) -> Any:
     return f"{entity_prefix}{text.upper()}"
 
 def _is_placeholder_entity(value: Any) -> bool:
-    return isinstance(value, str) and value.startswith("NEW:")
+    return is_new_item_placeholder(value)
 
-def _build_label_index(base_rows: List[Dict[str, Any]], *, entity_filter) -> Dict[str, List[str]]:
+def _build_label_index(
+    base_rows: List[Dict[str, Any]],
+    *,
+    entity_filter: Callable[[Any], bool],
+) -> Dict[str, List[str]]:
     out: Dict[str, List[str]] = {}
     for entity, label in _iter_labeled_entities(base_rows, entity_filter=entity_filter):
         for _, key in _label_match_entries(label):
@@ -633,7 +751,7 @@ def _collect_used_placeholders(*row_groups: List[Dict[str, Any]]) -> set[str]:
                 continue
             for field in PROPOSAL_ENTITY_FIELDS:
                 value = row.get(field)
-                if isinstance(value, str) and value.startswith("NEW:"):
+                if is_new_item_placeholder(value):
                     used.add(value)
     return used
 
@@ -656,14 +774,29 @@ class _PlaceholderResolver:
         self.next_placeholder_index = _next_placeholder_index(self.used_placeholders)
 
     def fresh_placeholder(self) -> str:
+        """Allocate the next unused placeholder token.
+
+        Returns:
+            A fresh `NEW:entity_n` placeholder string.
+        """
         while True:
-            placeholder = f"NEW:entity_{self.next_placeholder_index}"
+            placeholder = new_item_placeholder(self.next_placeholder_index)
             self.next_placeholder_index += 1
             if placeholder not in self.used_placeholders:
                 self.used_placeholders.add(placeholder)
                 return placeholder
 
     def resolve_field(self, row: Dict[str, Any], field: str, label_field: str) -> None:
+        """Resolve one placeholder field in place when a safe match exists.
+
+        Args:
+            row: Proposal row being updated.
+            field: Entity-id field that may hold a placeholder.
+            label_field: Label field used for resolution.
+
+        Returns:
+            None.
+        """
         value = row.get(field)
         label_key = normalize_label_for_match(row.get(label_field))
         if not (_is_placeholder_entity(value) and label_key):
@@ -702,6 +835,15 @@ def resolve_existing_entities(
     proposal_rows: List[Dict[str, Any]],
     base_rows: List[Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
+    """Resolve proposal placeholders against existing KB entities when possible.
+
+    Args:
+        proposal_rows: Proposed rows that may contain `NEW:*` placeholders.
+        base_rows: Existing KB rows used for lookup and reuse.
+
+    Returns:
+        Proposal rows with reusable entities filled in where safe.
+    """
     resolver = _PlaceholderResolver(base_rows, proposal_rows)
 
     out: List[Dict[str, Any]] = []
@@ -970,6 +1112,20 @@ def select_preview_rows(
     matched_entity_ids: Optional[set] = None,
     warnings: Optional[List[str]] = None,
 ) -> List[Dict[str, Any]]:
+    """Select compact KB preview rows relevant to the input text.
+
+    Args:
+        input_text: Source text being processed.
+        base_rows: Existing KB rows to retrieve from.
+        topk: Maximum number of preview rows to return.
+        session_id: Optional session id for FTS caching.
+        kb_revision: Current session KB revision.
+        matched_entity_ids: Entity ids already matched from the input.
+        warnings: Optional warning sink for degraded retrieval notes.
+
+    Returns:
+        Compact preview rows ranked for prompt context.
+    """
     if not base_rows or topk <= 0:
         return []
 

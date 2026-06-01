@@ -3,10 +3,12 @@
 import json
 import logging
 import re
+import threading
 import time
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any, Dict, List, Literal, Optional, Tuple
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 from .core.config import (
     ALLOW_DELETE,
@@ -22,24 +24,34 @@ from .core.config import (
     ONTOLOGY_FILE,
     TOPK,
 )
+from .core.ontology_config import validate_ontology_config
 from .extractor.context import clear_row_embedding_cache, resolve_existing_entities
 from .extractor.ontology import ONTOLOGY, normalize_statement_strings
 from .extractor.pipeline import generate_proposal
 from .extractor.postprocess import validate_required_new_item_rows
 from .state import (
-    PROPOSALS,
-    SESSIONS,
     canonical_row_key,
     clear_index_cache,
     dedupe_rows,
     append_session_warning,
+    get_session,
     get_or_create_session,
     load_default_query_rows,
     load_json_file,
     parse_json_bytes,
     rows_delta,
     rows_removed,
+    save_session,
     session_warnings,
+)
+from .session_store import (
+    count_proposals,
+    count_sessions,
+    delete_all_sessions,
+    delete_session_proposals,
+    get_proposal,
+    save_proposal,
+    session_upload_dir,
 )
 from .quickstatements import (
     build_step2_quickstatements,
@@ -52,14 +64,26 @@ from .quickstatements import (
 SessionMode = Literal["create_new", "extend_existing"]
 LANG_CODE_RE = re.compile(r"^[a-z]{2,8}(?:-[a-z0-9]{2,8})*$")
 LOGGER = logging.getLogger(__name__)
+ONTOLOGY_LOCK = threading.Lock()
 DEFAULT_QUERY_LOAD_FAILED_MESSAGE = f"Failed to load {DEFAULT_QUERY_FILE.name}; using an empty base KB."
 DEFAULT_QUERY_INVALID_MESSAGE = f"Ignored {DEFAULT_QUERY_FILE.name} for this session because it is not a JSON array."
 DELETE_QS_WARNING = (
     "Deleted rows are not included in QuickStatements output. Review the final JSON export for `deleted_rows`."
 )
 
+Row = dict[str, Any]
+SessionData = dict[str, Any]
+
 
 def line_count(text: str) -> int:
+    """Count non-empty lines in a text block.
+
+    Args:
+        text: Text to count.
+
+    Returns:
+        The number of non-blank lines.
+    """
     return sum(1 for line in text.splitlines() if line.strip())
 
 
@@ -79,6 +103,26 @@ def build_state_payload(
     detail: Optional[str] = None,
     user_extraction_instruction: Optional[str] = None,
 ) -> dict[str, Any]:
+    """Build the API payload for session state responses.
+
+    Args:
+        session_id: Session identifier to include in the payload.
+        exists: Whether the session currently exists.
+        base_rows: Base KB rows for the session.
+        current_rows: Current session KB rows.
+        delta_rows: Net added rows.
+        removed_rows: Net removed rows.
+        history_count: Number of approved proposals in the session.
+        token_usage_total: Cumulative token usage for the session.
+        created_at: Session creation timestamp.
+        warnings: Session-level warnings to include.
+        mode: Session mode when available.
+        detail: Optional detail message for missing sessions.
+        user_extraction_instruction: Stored user extraction instruction.
+
+    Returns:
+        A serialized state payload for the API.
+    """
     added_rows = delta_rows or []
     deleted_rows = removed_rows or []
     payload = {
@@ -117,6 +161,21 @@ def build_quickstatements_payload(
     detail: Optional[str] = None,
     **extra: Any,
 ) -> dict[str, Any]:
+    """Build the API payload for QuickStatements responses.
+
+    Args:
+        session_id: Session identifier to include in the payload.
+        exists: Whether the session currently exists.
+        quickstatements: Generated QuickStatements text.
+        warnings: Export warnings to include.
+        removed_rows: Rows removed from the session delta.
+        lang: Selected QuickStatements language code.
+        detail: Optional detail message for missing sessions.
+        extra: Additional route-specific payload fields.
+
+    Returns:
+        A serialized QuickStatements payload for the API.
+    """
     payload = {
         "exists": exists,
         "session_id": session_id,
@@ -133,56 +192,131 @@ def build_quickstatements_payload(
     return payload
 
 class ProposeRequest(BaseModel):
+    """Request body for proposal generation."""
+
     input_text: str
     user_extraction_instruction: Optional[str] = None
     session_id: Optional[str] = None
     mode: Optional[SessionMode] = None
 
 class ApproveRequest(BaseModel):
+    """Request body for proposal approval."""
+
     session_id: str
     proposal_id: str
     edited_kb_json: Optional[List[Dict[str, Any]]] = None
 
 class QuickStatementsBinding(BaseModel):
+    """Binding between a placeholder token and a resolved QID."""
+
     placeholder: str
     qid: Optional[str] = None
 
 class QuickStatementsStep2Request(BaseModel):
+    """Request body for QuickStatements Step 2 generation."""
+
     bindings: List[QuickStatementsBinding]
 
 api_router = APIRouter(prefix="/api", tags=["api"])
 health_router = APIRouter(tags=["health"])
 
 def as_row_list(rows: Any) -> list[dict[str, Any]]:
+    """Filter a value down to a list of row dicts.
+
+    Args:
+        rows: Candidate row collection.
+
+    Returns:
+        Only dict rows when the input is a list.
+    """
     return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
 
-def current_rows(session: dict[str, Any]) -> list[dict[str, Any]]:
+def current_rows(session: SessionData) -> list[Row]:
+    """Return the current KB rows for a session.
+
+    Args:
+        session: Session data to inspect.
+
+    Returns:
+        The current session rows as dicts.
+    """
     return as_row_list(session.get("current_kb_json", []))
 
 def require_input_text(input_text: str) -> None:
+    """Reject empty proposal input text.
+
+    Args:
+        input_text: Raw user input text.
+
+    Returns:
+        None.
+    """
     if not input_text or not input_text.strip():
         raise HTTPException(status_code=400, detail="input_text is required")
 
 
 def normalize_optional_text(value: Optional[str]) -> str:
+    """Normalize an optional text field to a stripped string.
+
+    Args:
+        value: Optional text input.
+
+    Returns:
+        A stripped string or an empty string.
+    """
     return value.strip() if isinstance(value, str) else ""
 
 def require_value(mapping: dict[str, Any], key: str, detail: str) -> Any:
+    """Fetch a required mapping value or raise a 404.
+
+    Args:
+        mapping: Mapping to read from.
+        key: Key to require.
+        detail: Error detail when the key is missing.
+
+    Returns:
+        The stored mapping value.
+    """
     value = mapping.get(key)
     if value is None:
         raise HTTPException(status_code=404, detail=detail)
     return value
 
-def session_or_none(session_id: str) -> Tuple[Optional[str], Optional[dict[str, Any]]]:
+def session_or_none(session_id: str) -> Tuple[Optional[str], Optional[SessionData]]:
+    """Resolve a session id to a session if it exists.
+
+    Args:
+        session_id: Raw session id from the request.
+
+    Returns:
+        The normalized session id and matching session data, if any.
+    """
     sid = (session_id or "").strip()
     if not sid:
         return None, None
-    return sid, SESSIONS.get(sid)
+    return sid, get_session(sid)
 
 def non_negative_int(value: Any, default: int = 0) -> int:
+    """Return a non-negative integer or a default value.
+
+    Args:
+        value: Candidate integer value.
+        default: Fallback when the value is invalid.
+
+    Returns:
+        A non-negative integer.
+    """
     return value if isinstance(value, int) and value >= 0 else default
 
 def unique_texts(values: List[str]) -> List[str]:
+    """Preserve the first occurrence of each unique string.
+
+    Args:
+        values: Input strings.
+
+    Returns:
+        Unique strings in first-seen order.
+    """
     out: List[str] = []
     seen: set[str] = set()
     for value in values:
@@ -192,14 +326,38 @@ def unique_texts(values: List[str]) -> List[str]:
         out.append(value)
     return out
 
-def current_session_warnings(session: Optional[dict[str, Any]]) -> list[str]:
+def current_session_warnings(session: Optional[SessionData]) -> list[str]:
+    """Return normalized warnings for one session.
+
+    Args:
+        session: Session data to inspect.
+
+    Returns:
+        Unique session warning strings.
+    """
     return unique_texts(session_warnings(session))
 
 
 def missing_session_detail(session_id: str) -> str:
+    """Build the standard message for expired sessions.
+
+    Args:
+        session_id: Missing session identifier.
+
+    Returns:
+        A user-facing detail message.
+    """
     return "Your previous session is no longer available. Start a new session to continue."
 
 def quickstatements_lang(requested_lang: Optional[str]) -> str:
+    """Normalize a QuickStatements language code.
+
+    Args:
+        requested_lang: Optional requested language code.
+
+    Returns:
+        A validated language code, defaulting to `en`.
+    """
     requested = (requested_lang or "").strip().lower()
     if requested and LANG_CODE_RE.fullmatch(requested):
         return requested
@@ -207,6 +365,14 @@ def quickstatements_lang(requested_lang: Optional[str]) -> str:
 
 
 def quickstatements_empty(session_id: str) -> dict[str, Any]:
+    """Build the empty QuickStatements payload for a missing session.
+
+    Args:
+        session_id: Missing session identifier.
+
+    Returns:
+        A serialized missing-session export payload.
+    """
     return build_quickstatements_payload(
         session_id,
         exists=False,
@@ -216,7 +382,15 @@ def quickstatements_empty(session_id: str) -> dict[str, Any]:
         step2_quickstatements="",
     )
 
-def get_base_rows_for_session(session: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
+def get_base_rows_for_session(session: Optional[SessionData] = None) -> list[Row]:
+    """Return the base KB rows for a session or the default query.
+
+    Args:
+        session: Optional session data to hydrate.
+
+    Returns:
+        Base rows for diffing, export, and retrieval.
+    """
     session = session if isinstance(session, dict) else None
     base_rows = session.get("base_kb_json") if session else None
     if isinstance(base_rows, list):
@@ -236,25 +410,58 @@ def get_base_rows_for_session(session: Optional[dict[str, Any]] = None) -> list[
     return loaded
 
 def session_rows(
-    session: dict[str, Any],
-) -> Tuple[list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]], list[dict[str, Any]]]:
+    session: SessionData,
+) -> Tuple[list[Row], list[Row], list[Row], list[Row]]:
+    """Compute base, current, added, and removed rows for a session.
+
+    Args:
+        session: Session data to inspect.
+
+    Returns:
+        Base rows, current rows, added rows, and removed rows.
+    """
     base_rows = get_base_rows_for_session(session)
     current = current_rows(session)
     return base_rows, current, rows_delta(base_rows, current), rows_removed(base_rows, current)
 
 def quickstatements_rows_for_session(
-    session: dict[str, Any],
-) -> Tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    session: SessionData,
+) -> Tuple[list[Row], list[Row]]:
+    """Return export-ready delta rows and removed rows for a session.
+
+    Args:
+        session: Session data to inspect.
+
+    Returns:
+        Resolved delta rows and removed rows.
+    """
     base_rows, _, delta_rows, removed_rows = session_rows(session)
     return resolve_existing_entities(delta_rows, base_rows), removed_rows
 
 def quickstatements_warnings(warnings: List[str], removed_rows: list[dict[str, Any]]) -> list[str]:
+    """Add export-specific warnings to an existing warning list.
+
+    Args:
+        warnings: Existing warning messages.
+        removed_rows: Removed rows from the session delta.
+
+    Returns:
+        Unique warning strings for the export payload.
+    """
     combined = list(warnings)
     if removed_rows:
         combined.append(DELETE_QS_WARNING)
     return unique_texts(combined)
 
 def proposal_removed_rows(proposal: dict[str, Any]) -> list[dict[str, Any]]:
+    """Extract rows removed or replaced by a proposal.
+
+    Args:
+        proposal: Stored proposal record.
+
+    Returns:
+        Rows that should be removed before applying the approved patch.
+    """
     diff = proposal.get("diff") if isinstance(proposal, dict) else None
     if not isinstance(diff, dict):
         return []
@@ -277,6 +484,18 @@ def safe_generate_proposal(
     kb_revision: int,
     user_extraction_instruction: Optional[str] = None,
 ) -> dict[str, Any]:
+    """Generate a proposal and translate failures into HTTP errors.
+
+    Args:
+        input_text: Source text to extract from.
+        base_rows: Current session rows used as proposal context.
+        session_id: Session identifier for logging and tracking.
+        kb_revision: Current session KB revision.
+        user_extraction_instruction: Optional user guidance for extraction.
+
+    Returns:
+        A stored proposal record.
+    """
     try:
         return generate_proposal(
             input_text,
@@ -289,19 +508,88 @@ def safe_generate_proposal(
         LOGGER.exception("Failed to generate proposal for session %s.", session_id)
         raise HTTPException(status_code=500, detail=str(exc))
 
-def reset_server_state_on_kb_change() -> None:
-    SESSIONS.clear()
-    PROPOSALS.clear()
-    clear_index_cache()
-    clear_row_embedding_cache()
+def _ontology_snapshot() -> tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any], Optional[str]]:
+    return (
+        ONTOLOGY.rows,
+        ONTOLOGY.index,
+        ONTOLOGY.compact_prompt_cache,
+        ONTOLOGY.load_error,
+    )
+
+
+def _restore_ontology_snapshot(snapshot: tuple[list[dict[str, Any]], dict[str, Any], dict[str, Any], Optional[str]]) -> None:
+    ONTOLOGY.rows, ONTOLOGY.index, ONTOLOGY.compact_prompt_cache, ONTOLOGY.load_error = snapshot
+
+
+def load_ontology_rows(path: Path) -> list[dict[str, Any]]:
+    """Load and validate ontology rows from a path."""
+    rows = load_json_file(path)
+    if not isinstance(rows, list):
+        raise HTTPException(status_code=500, detail=f"{path.name} must be a JSON array")
+    validate_ontology_upload(rows)
+    return [dict(row) for row in rows if isinstance(row, dict)]
+
+
+def session_upload_path(session_id: str, filename: str) -> Path:
+    """Return a fixed, session-owned upload path."""
+    if Path(filename).name != filename:
+        raise HTTPException(status_code=400, detail="Invalid upload filename.")
+    try:
+        return session_upload_dir(session_id) / filename
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid session_id.")
+
+
+def stored_session_file(session_id: str, session: SessionData, field: str, filename: str) -> Optional[Path]:
+    """Return a stored session upload only if it belongs to the session."""
+    raw_path = session.get(field)
+    if not raw_path:
+        return None
+    expected = session_upload_path(session_id, filename).resolve()
+    candidate = Path(str(raw_path)).resolve()
+    if candidate != expected:
+        raise HTTPException(status_code=400, detail="Stored upload path does not belong to this session.")
+    return candidate if candidate.is_file() else None
+
+
+@contextmanager
+def ontology_for_session(session_id: str, session: SessionData):
+    """Load a session-specific ontology while code uses the global ontology store."""
+    with ONTOLOGY_LOCK:
+        snapshot = _ontology_snapshot()
+        try:
+            ontology_path = stored_session_file(session_id, session, "ontology_file", "ontology.json")
+            if ontology_path is not None:
+                ONTOLOGY.load(load_ontology_rows(ontology_path))
+            elif ONTOLOGY.load_error:
+                raise HTTPException(status_code=500, detail=f"Ontology load failed: {ONTOLOGY.load_error}")
+            yield
+        finally:
+            _restore_ontology_snapshot(snapshot)
+
 
 async def upload_json_array(
     file: UploadFile,
-    out_name: str,
+    output_path: Path,
     array_error: str,
     success_message: str,
-    on_success=None,
+    validate: Optional[Callable[[list[Any]], Any]] = None,
+    on_success: Optional[Callable[[list[Any]], Any]] = None,
+    extra: Optional[dict[str, Any]] = None,
 ) -> dict[str, Any]:
+    """Store an uploaded JSON array and run an optional callback.
+
+    Args:
+        file: Uploaded JSON file.
+        output_path: Output path to write.
+        array_error: Error detail when the JSON is not an array.
+        success_message: Success message for the response.
+        validate: Optional callback run before saving the parsed array.
+        on_success: Optional callback run with the parsed array.
+
+    Returns:
+        A success payload describing the saved upload.
+    """
     raw = await file.read()
     try:
         data = parse_json_bytes(raw)
@@ -310,30 +598,68 @@ async def upload_json_array(
 
     if not isinstance(data, list):
         raise HTTPException(status_code=400, detail=array_error)
+    if validate is not None:
+        validate(data)
 
-    output_path = Path(out_name)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     if on_success is not None:
         on_success(data)
 
-    return {
+    payload = {
         "ok": True,
         "message": success_message,
-        "saved_as": out_name,
+        "saved_as": str(output_path),
         "original_filename": file.filename,
         "rows": len(data),
     }
+    if extra:
+        payload.update(extra)
+    return payload
 
-def health_payload() -> dict[str, Any]:
+def validate_ontology_upload(data: list[Any]) -> None:
+    """Reject uploaded ontologies that do not satisfy configured ontology policy."""
+    errors = validate_ontology_config(ONTOLOGY.build_index(data))
+    if errors:
+        raise HTTPException(
+            status_code=400,
+            detail="Ontology configuration does not match uploaded ontology: " + " ".join(errors),
+        )
+
+def health_payload(session_id: Optional[str] = None) -> dict[str, Any]:
+    """Build the shared health payload for both health routes.
+
+    Returns:
+        Backend health and configuration details.
+    """
+    sid, session = session_or_none(session_id or "")
+    session_ontology_path = stored_session_file(sid, session, "ontology_file", "ontology.json") if sid and session else None
+    session_query_path = stored_session_file(sid, session, "query_file", "query.json") if sid and session else None
+    ontology_ready = session_ontology_path is not None or not ONTOLOGY.load_error
+    ontology_rows = len(ONTOLOGY.rows)
+    ontology_load_error = ONTOLOGY.load_error
+    if session_ontology_path is not None:
+        try:
+            ontology_rows = len(load_ontology_rows(session_ontology_path))
+            ontology_load_error = None
+        except HTTPException as exc:
+            ontology_rows = 0
+            ontology_load_error = str(exc.detail)
+
     return {
         "ok": True,
+        "session_id": sid,
         "ontology_file": str(ONTOLOGY_FILE),
-        "ontology_rows": len(ONTOLOGY.rows),
-        "ontology_load_error": ONTOLOGY.load_error,
-        "default_query_file_exists": DEFAULT_QUERY_FILE.exists(),
-        "sessions": len(SESSIONS),
-        "proposals": len(PROPOSALS),
+        "ontology_file_exists": ontology_ready,
+        "session_ontology_file_exists": session_ontology_path is not None,
+        "server_ontology_file_exists": ONTOLOGY_FILE.exists(),
+        "ontology_rows": ontology_rows,
+        "ontology_load_error": ontology_load_error,
+        "default_query_file_exists": session_query_path is not None or DEFAULT_QUERY_FILE.exists(),
+        "session_query_file_exists": session_query_path is not None,
+        "server_default_query_file_exists": DEFAULT_QUERY_FILE.exists(),
+        "sessions": count_sessions(),
+        "proposals": count_proposals(),
         "extractor_model": EXTRACTOR_MODEL,
         "extractor_temperature": EXTRACTOR_TEMPERATURE,
         "embedding_model": EMBEDDING_MODEL,
@@ -347,15 +673,33 @@ def health_payload() -> dict[str, Any]:
     }
 
 @api_router.get("/health")
-def api_health():
-    return health_payload()
+def api_health(session_id: Optional[str] = None) -> dict[str, Any]:
+    """Serve the API health endpoint.
+
+    Returns:
+        The current backend health payload.
+    """
+    return health_payload(session_id=session_id)
 
 @health_router.get("/health")
-def root_health():
-    return health_payload()
+def root_health(session_id: Optional[str] = None) -> dict[str, Any]:
+    """Serve the root health endpoint.
+
+    Returns:
+        The current backend health payload.
+    """
+    return health_payload(session_id=session_id)
 
 @api_router.get("/state/{session_id}")
-def api_state(session_id: str):
+def api_state(session_id: str) -> dict[str, Any]:
+    """Return the current state payload for a session.
+
+    Args:
+        session_id: Session identifier to load.
+
+    Returns:
+        A serialized session state payload.
+    """
     sid, session = session_or_none(session_id)
     if session is None:
         base_rows = get_base_rows_for_session()
@@ -370,6 +714,7 @@ def api_state(session_id: str):
     base_rows, current_kb_rows, delta_rows, removed_rows = session_rows(session)
     token_usage_total = non_negative_int(session.get("token_usage_total", 0))
     session["token_usage_total"] = token_usage_total
+    save_session(session_id, session)
     return build_state_payload(
         session_id,
         exists=True,
@@ -386,7 +731,23 @@ def api_state(session_id: str):
     )
 
 @api_router.get("/default-query")
-def api_default_query():
+def api_default_query(session_id: Optional[str] = None) -> dict[str, Any]:
+    """Return the server's default base KB rows.
+
+    Returns:
+        A payload describing whether the default query exists and its rows.
+    """
+    sid, session = session_or_none(session_id or "")
+    query_path = stored_session_file(sid, session, "query_file", "query.json") if sid and session else None
+    if query_path is not None:
+        try:
+            rows = load_json_file(query_path)
+        except Exception as exc:
+            raise HTTPException(status_code=500, detail=f"Failed to read session knowledge graph file: {exc}")
+        if not isinstance(rows, list):
+            raise HTTPException(status_code=500, detail="Session knowledge graph file must be a JSON array.")
+        return {"exists": True, "rows": rows, "session_id": sid}
+
     if not DEFAULT_QUERY_FILE.exists():
         return {"exists": False, "rows": []}
     try:
@@ -398,114 +759,268 @@ def api_default_query():
     return {"exists": True, "rows": rows}
 
 @api_router.get("/quickstatements/{session_id}")
-def api_quickstatements(session_id: str, lang: Optional[str] = None):
+def api_quickstatements(session_id: str, lang: Optional[str] = None) -> dict[str, Any]:
+    """Generate QuickStatements export output for a session.
+
+    Args:
+        session_id: Session identifier to export.
+        lang: Optional label language code.
+
+    Returns:
+        A QuickStatements export payload.
+    """
     sid, session = session_or_none(session_id)
     if session is None:
         return quickstatements_empty(sid or session_id)
     resolved_lang = quickstatements_lang(lang)
 
-    reference_rows = get_base_rows_for_session(session)
-    delta_rows, removed_rows = quickstatements_rows_for_session(session)
-    manifest_template, manifest_warnings = placeholder_manifest_template(delta_rows)
-    if manifest_template:
-        # New placeholder subjects need a CREATE pass first so Step 2 can bind their
-        # real QIDs back into the remaining statements.
-        step1_qs, manifest_entries, step1_warnings = placeholder_create_quickstatements(delta_rows, lang=resolved_lang)
+    with ontology_for_session(sid or session_id, session):
+        reference_rows = get_base_rows_for_session(session)
+        delta_rows, removed_rows = quickstatements_rows_for_session(session)
+        manifest_template, manifest_warnings = placeholder_manifest_template(delta_rows)
+        if manifest_template:
+            # New placeholder subjects need a CREATE pass first so Step 2 can bind their
+            # real QIDs back into the remaining statements.
+            step1_qs, manifest_entries, step1_warnings = placeholder_create_quickstatements(delta_rows, lang=resolved_lang)
+            return build_quickstatements_payload(
+                session_id,
+                mode="two_step",
+                lang=resolved_lang,
+                quickstatements=step1_qs,
+                warnings=quickstatements_warnings(manifest_warnings + step1_warnings, removed_rows),
+                removed_rows=removed_rows,
+                skipped_rows=0,
+                step1_quickstatements=step1_qs,
+                step1_placeholders=manifest_entries,
+                step2_quickstatements="",
+                step2_warnings=[],
+                step2_unresolved_placeholders=manifest_template,
+                binding_template=manifest_template,
+            )
+
+        qs_rows, qs_warnings, row_index_map = sanitize_rows_for_quickstatements(
+            delta_rows,
+            reference_rows=reference_rows,
+        )
+        qs_text = rows_to_quickstatements(qs_rows, lang=resolved_lang)
+        skipped_rows = sum(1 for mapped in row_index_map.values() if mapped is None)
+        warnings = quickstatements_warnings(qs_warnings, removed_rows)
         return build_quickstatements_payload(
             session_id,
-            mode="two_step",
+            mode="single_step",
             lang=resolved_lang,
-            quickstatements=step1_qs,
-            warnings=quickstatements_warnings(manifest_warnings + step1_warnings, removed_rows),
+            quickstatements=qs_text,
+            warnings=warnings,
             removed_rows=removed_rows,
-            skipped_rows=0,
-            step1_quickstatements=step1_qs,
-            step1_placeholders=manifest_entries,
-            step2_quickstatements="",
-            step2_warnings=[],
-            step2_unresolved_placeholders=manifest_template,
-            binding_template=manifest_template,
+            skipped_rows=skipped_rows,
+            step1_quickstatements="",
+            step1_placeholders=[],
+            step2_quickstatements=qs_text,
+            step2_warnings=warnings,
+            step2_unresolved_placeholders=[],
+            binding_template=[],
         )
 
-    qs_rows, qs_warnings, row_index_map = sanitize_rows_for_quickstatements(
-        delta_rows,
-        reference_rows=reference_rows,
-    )
-    qs_text = rows_to_quickstatements(qs_rows, lang=resolved_lang)
-    skipped_rows = sum(1 for mapped in row_index_map.values() if mapped is None)
-    warnings = quickstatements_warnings(qs_warnings, removed_rows)
-    return build_quickstatements_payload(
-        session_id,
-        mode="single_step",
-        lang=resolved_lang,
-        quickstatements=qs_text,
-        warnings=warnings,
-        removed_rows=removed_rows,
-        skipped_rows=skipped_rows,
-        step1_quickstatements="",
-        step1_placeholders=[],
-        step2_quickstatements=qs_text,
-        step2_warnings=warnings,
-        step2_unresolved_placeholders=[],
-        binding_template=[],
-    )
-
 @api_router.post("/quickstatements/{session_id}/step2")
-def api_quickstatements_step2(session_id: str, req: QuickStatementsStep2Request, lang: Optional[str] = None):
+def api_quickstatements_step2(
+    session_id: str,
+    req: QuickStatementsStep2Request,
+    lang: Optional[str] = None,
+) -> dict[str, Any]:
+    """Generate Step 2 QuickStatements after placeholder binding.
+
+    Args:
+        session_id: Session identifier to export.
+        req: Placeholder binding request body.
+        lang: Optional label language code.
+
+    Returns:
+        A QuickStatements Step 2 payload.
+    """
     sid, session = session_or_none(session_id)
     if session is None:
         return quickstatements_empty(sid or session_id)
     resolved_lang = quickstatements_lang(lang)
 
-    reference_rows = get_base_rows_for_session(session)
-    delta_rows, removed_rows = quickstatements_rows_for_session(session)
-    bindings = {
-        binding.placeholder: binding.qid or ""
-        for binding in req.bindings
-        if isinstance(binding.placeholder, str) and binding.placeholder.strip()
-    }
-    result = build_step2_quickstatements(
-        delta_rows,
-        bindings,
-        lang=resolved_lang,
-        reference_rows=reference_rows,
-    )
-    warnings = quickstatements_warnings(list(result["warnings"]), removed_rows)
-    return build_quickstatements_payload(
-        session_id,
-        lang=resolved_lang,
-        quickstatements=result["quickstatements"],
-        warnings=warnings,
-        removed_rows=removed_rows,
-        skipped_rows=result["skipped_rows"],
-        unresolved_placeholders=result["unresolved_placeholders"],
-    )
+    with ontology_for_session(sid or session_id, session):
+        reference_rows = get_base_rows_for_session(session)
+        delta_rows, removed_rows = quickstatements_rows_for_session(session)
+        bindings = {
+            binding.placeholder: binding.qid or ""
+            for binding in req.bindings
+            if isinstance(binding.placeholder, str) and binding.placeholder.strip()
+        }
+        result = build_step2_quickstatements(
+            delta_rows,
+            bindings,
+            lang=resolved_lang,
+            reference_rows=reference_rows,
+        )
+        warnings = quickstatements_warnings(list(result["warnings"]), removed_rows)
+        return build_quickstatements_payload(
+            session_id,
+            lang=resolved_lang,
+            quickstatements=result["quickstatements"],
+            warnings=warnings,
+            removed_rows=removed_rows,
+            skipped_rows=result["skipped_rows"],
+            unresolved_placeholders=result["unresolved_placeholders"],
+        )
 
 @api_router.post("/upload-ontology")
-async def api_upload_ontology(file: UploadFile = File(...)):
+async def api_upload_ontology(
+    file: UploadFile = File(...),
+    session_id: Optional[str] = Form(None),
+) -> dict[str, Any]:
+    """Upload and load a replacement ontology JSON array.
+
+    Args:
+        file: Uploaded ontology JSON file.
+
+    Returns:
+        A success payload describing the saved upload.
+    """
+    sid, session = get_or_create_session(session_id)
+    output_path = session_upload_path(sid, "ontology.json")
+
+    def on_success(data: list[Any]) -> None:
+        session["ontology_file"] = str(output_path)
+        save_session(sid, session)
+        delete_session_proposals(sid)
+        clear_index_cache()
+        clear_row_embedding_cache()
+
     return await upload_json_array(
         file=file,
-        out_name=str(ONTOLOGY_FILE),
+        output_path=output_path,
         array_error="Ontology must be a JSON array.",
         success_message="Ontology uploaded.",
-        on_success=lambda data: (ONTOLOGY.load(data), reset_server_state_on_kb_change()),
+        validate=validate_ontology_upload,
+        on_success=on_success,
+        extra={"session_id": sid},
     )
+
+@api_router.delete("/upload-ontology")
+def api_remove_ontology(session_id: Optional[str] = None) -> dict[str, Any]:
+    """Remove the configured ontology file and unload it from memory.
+
+    Returns:
+        A payload describing whether a file was removed.
+    """
+    sid, session = session_or_none(session_id or "")
+    if session is None or not sid:
+        return {
+            "ok": True,
+            "session_id": session_id,
+            "removed": False,
+            "message": "No session ontology file was present.",
+        }
+    ontology_path = stored_session_file(sid, session, "ontology_file", "ontology.json")
+    removed = False
+    if ontology_path is not None:
+        ontology_path.unlink()
+        removed = True
+    session["ontology_file"] = None
+    save_session(sid, session)
+    delete_session_proposals(sid)
+    clear_index_cache()
+    clear_row_embedding_cache()
+    return {
+        "ok": True,
+        "session_id": sid,
+        "removed": removed,
+        "message": "Ontology removed." if removed else "No session ontology file was present.",
+    }
 
 @api_router.post("/upload-query")
-async def api_upload_query(file: UploadFile = File(...)):
+async def api_upload_query(
+    file: UploadFile = File(...),
+    session_id: Optional[str] = Form(None),
+) -> dict[str, Any]:
+    """Upload and store a replacement default query JSON array.
+
+    Args:
+        file: Uploaded default query JSON file.
+
+    Returns:
+        A success payload describing the saved upload.
+    """
+    sid, session = get_or_create_session(session_id)
+    output_path = session_upload_path(sid, "query.json")
+
+    def on_success(data: list[Any]) -> None:
+        rows = as_row_list(data)
+        session["query_file"] = str(output_path)
+        session["base_kb_json"] = rows
+        session["current_kb_json"] = [dict(row) for row in rows]
+        session["kb_revision"] = 0
+        session["history"] = []
+        save_session(sid, session)
+        delete_session_proposals(sid)
+        clear_index_cache()
+        clear_row_embedding_cache()
+
     return await upload_json_array(
         file=file,
-        out_name=str(DEFAULT_QUERY_FILE),
+        output_path=output_path,
         array_error="Knowledge graph file must be a JSON array.",
         success_message="Knowledge graph uploaded.",
-        on_success=lambda _data: reset_server_state_on_kb_change(),
+        on_success=on_success,
+        extra={"session_id": sid},
     )
 
+@api_router.delete("/upload-query")
+def api_remove_query(session_id: Optional[str] = None) -> dict[str, Any]:
+    """Remove the configured default knowledge graph file.
+
+    Returns:
+        A payload describing whether a file was removed.
+    """
+    sid, session = session_or_none(session_id or "")
+    if session is None or not sid:
+        return {
+            "ok": True,
+            "session_id": session_id,
+            "removed": False,
+            "message": "No session knowledge graph file was present.",
+        }
+    query_path = stored_session_file(sid, session, "query_file", "query.json")
+    removed = False
+    if query_path is not None:
+        query_path.unlink()
+        removed = True
+    base_rows, warnings = load_default_query_rows(
+        load_failed_message=DEFAULT_QUERY_LOAD_FAILED_MESSAGE,
+        invalid_message=DEFAULT_QUERY_INVALID_MESSAGE,
+    )
+    session["query_file"] = None
+    session["base_kb_json"] = base_rows
+    session["current_kb_json"] = [dict(row) for row in base_rows]
+    session["kb_revision"] = 0
+    session["history"] = []
+    session["warnings"] = warnings
+    save_session(sid, session)
+    delete_session_proposals(sid)
+    clear_index_cache()
+    clear_row_embedding_cache()
+    return {
+        "ok": True,
+        "session_id": sid,
+        "removed": removed,
+        "message": "Knowledge graph removed." if removed else "No session knowledge graph file was present.",
+    }
+
 @api_router.post("/propose")
-def api_propose(req: ProposeRequest):
+def api_propose(req: ProposeRequest) -> dict[str, Any]:
+    """Generate a new proposal for the current session text input.
+
+    Args:
+        req: Proposal generation request body.
+
+    Returns:
+        A serialized proposal payload.
+    """
     require_input_text(req.input_text)
-    if ONTOLOGY.load_error:
-        raise HTTPException(status_code=500, detail=f"Ontology load failed: {ONTOLOGY.load_error}")
 
     sid, session = get_or_create_session(req.session_id, mode=req.mode)
     base_rows = current_rows(session)
@@ -514,13 +1029,14 @@ def api_propose(req: ProposeRequest):
     user_extraction_instruction = normalize_optional_text(req.user_extraction_instruction)
     session["user_extraction_instruction"] = user_extraction_instruction
 
-    proposal = safe_generate_proposal(
-        req.input_text,
-        base_rows,
-        session_id=sid,
-        kb_revision=kb_revision,
-        user_extraction_instruction=user_extraction_instruction,
-    )
+    with ontology_for_session(sid, session):
+        proposal = safe_generate_proposal(
+            req.input_text,
+            base_rows,
+            session_id=sid,
+            kb_revision=kb_revision,
+            user_extraction_instruction=user_extraction_instruction,
+        )
     generation_tokens = non_negative_int(proposal.get("generation_tokens", 0))
     token_usage_total = non_negative_int(session.get("token_usage_total", 0))
     session["token_usage_total"] = token_usage_total + generation_tokens
@@ -536,15 +1052,26 @@ def api_propose(req: ProposeRequest):
         + list(proposal.get("retrieval_warnings", []))
         + list(proposal.get("modeling_warnings", []))
     )
+    save_session(sid, session)
+    save_proposal(proposal)
     return proposal
 
 @api_router.post("/approve")
-def api_approve(req: ApproveRequest):
-    session = require_value(SESSIONS, req.session_id, "Unknown session_id")
-    proposal = require_value(PROPOSALS, req.proposal_id, "Unknown proposal_id")
-    proposal_session_id = proposal.get("session_id")
-    if proposal_session_id and proposal_session_id != req.session_id:
-        raise HTTPException(status_code=400, detail="proposal_id does not belong to the provided session_id")
+def api_approve(req: ApproveRequest) -> dict[str, Any]:
+    """Approve a proposal patch and apply it to session state.
+
+    Args:
+        req: Proposal approval request body.
+
+    Returns:
+        A payload with the updated session graph snapshot.
+    """
+    session = get_session(req.session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="Unknown session_id")
+    proposal = get_proposal(req.session_id, req.proposal_id)
+    if proposal is None:
+        raise HTTPException(status_code=404, detail="Unknown proposal_id")
     session_revision = non_negative_int(session.get("kb_revision", 0))
     proposal_revision = non_negative_int(proposal.get("kb_revision"), default=-1)
     # Reject approvals generated against an older KB snapshot so we do not merge a
@@ -563,18 +1090,19 @@ def api_approve(req: ApproveRequest):
     if not isinstance(approved_kb_json, list):
         raise HTTPException(status_code=400, detail="edited_kb_json must be a JSON array")
 
-    approved_patch_rows = [normalize_statement_strings(dict(row)) for row in as_row_list(approved_kb_json)]
-    existing_rows = current_rows(session)
-    required_modeling_warnings = validate_required_new_item_rows(
-        approved_patch_rows,
-        existing_rows=existing_rows,
-        require_source=bool(proposal.get("requires_source_links")),
-    )
-    if required_modeling_warnings:
-        raise HTTPException(
-            status_code=400,
-            detail="Cannot approve proposal until required modeling rows are present: " + " ".join(required_modeling_warnings),
+    with ontology_for_session(req.session_id, session):
+        approved_patch_rows = [normalize_statement_strings(dict(row)) for row in as_row_list(approved_kb_json)]
+        existing_rows = current_rows(session)
+        required_modeling_warnings = validate_required_new_item_rows(
+            approved_patch_rows,
+            existing_rows=existing_rows,
+            require_source=bool(proposal.get("requires_source_links")),
         )
+        if required_modeling_warnings:
+            raise HTTPException(
+                status_code=400,
+                detail="Cannot approve proposal until required modeling rows are present: " + " ".join(required_modeling_warnings),
+            )
     removed_keys = {canonical_row_key(row) for row in proposal_removed_rows(proposal)}
     # Apply approvals as a patch: remove rows the proposal replaced or deleted, then
     # add the approved rows back in deduplicated form.
@@ -591,6 +1119,7 @@ def api_approve(req: ApproveRequest):
     })
 
     base_rows, current_kb_rows, delta_rows, removed_rows = session_rows(session)
+    save_session(req.session_id, session)
 
     return {
         "ok": True,
