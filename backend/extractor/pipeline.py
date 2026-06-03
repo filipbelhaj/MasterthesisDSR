@@ -13,7 +13,15 @@ from ..core.config import (
     TOPK,
     get_client,
 )
-from ..state import PROPOSALS, dedupe_rows
+from ..core.ontology_config import (
+    DISALLOWED_EXTRACTOR_PROPERTY_NOTE,
+    SHAPE_CONSTRAINTS_NOTE,
+    disallowed_extractor_properties,
+    is_new_item_placeholder,
+    reference_property_labels_preview,
+    source_property_labels_preview,
+)
+from ..state import dedupe_rows
 from ..core.prompt import SYSTEM_PROMPT
 from .context import (
     entity_ids_from_catalog,
@@ -27,12 +35,7 @@ from .context import (
     structured_reference_style_examples,
 )
 from .ontology import ONTOLOGY, compact_ontology_for_prompt
-from .ontology_rules import (
-    DISALLOWED_EXTRACTOR_PROPERTY_NOTE,
-    disallowed_extractor_properties,
-    format_backticked_or_list,
-)
-from .shapes import SHAPE_CONSTRAINTS_NOTE, compact_shapes_for_prompt
+from .shapes import compact_shapes_for_prompt
 from .postprocess import (
     augment_row_references,
     augment_new_item_source_rows,
@@ -92,7 +95,7 @@ OUTPUT_CONSTRAINTS = {
         "qualifiers": "Each row can contain at most one qualifier pair.",
         "references": (
             "Optional. When present, use one or more source references as property-value pairs. "
-            f"Allowed reference properties are {format_backticked_or_list(('described by', 'declared by', 'defined by'))} only. "
+            f"Allowed reference properties are {reference_property_labels_preview()} only. "
             "Prefer an existing entity id/URI in `value`; if no existing source entity is available, "
             "a grounded source title or URL string may be used instead."
         ),
@@ -119,7 +122,7 @@ ITEM_LABEL_SAMPLE_NOTE = (
 )
 SOURCE_CANDIDATE_NOTE = (
     "Existing KB entities that look like source documents/sections and are explicitly mentioned "
-    "in the input. Reuse these for `described by`/`declared by` rows when grounding new items only "
+    f"in the input. Reuse these for {source_property_labels_preview()} rows when grounding new items only "
     "when one candidate is clearly the right source; otherwise omit the source row rather than guess."
 )
 ACTOR_CATALOG_NOTE = (
@@ -128,6 +131,14 @@ ACTOR_CATALOG_NOTE = (
 )
 
 def token_usage(response: Any) -> Dict[str, int]:
+    """Extract token counts from an OpenAI response object.
+
+    Args:
+        response: SDK response object or dict-like payload.
+
+    Returns:
+        Prompt, completion, and total token counts.
+    """
     usage = getattr(response, "usage", None)
     if usage is None and isinstance(response, dict):
         usage = response.get("usage")
@@ -212,9 +223,9 @@ def _entity_reuse_warnings(
             continue
         before_item = before.get("item")
         after_item = after.get("item")
-        if not (isinstance(before_item, str) and before_item.startswith("NEW:")):
+        if not is_new_item_placeholder(before_item):
             continue
-        if not isinstance(after_item, str) or after_item.startswith("NEW:") or before_item == after_item:
+        if not isinstance(after_item, str) or is_new_item_placeholder(after_item) or before_item == after_item:
             continue
 
         key = (before_item, after_item)
@@ -279,6 +290,18 @@ def build_prompt_payload(
     kb_revision: int = 0,
     user_extraction_instruction: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], List[str]]:
+    """Assemble the extractor prompt payload and retrieval warnings.
+
+    Args:
+        input_text: Source text to extract from.
+        base_rows: Existing KB rows for retrieval context.
+        session_id: Optional session id for retrieval caches.
+        kb_revision: Current session KB revision.
+        user_extraction_instruction: Optional user guidance for extraction.
+
+    Returns:
+        The prompt payload and any retrieval warnings.
+    """
     kb_context, retrieval_warnings = _build_kb_prompt_context(
         input_text,
         base_rows,
@@ -307,6 +330,18 @@ def call_extractor(
     kb_revision: int = 0,
     user_extraction_instruction: Optional[str] = None,
 ) -> Tuple[Dict[str, Any], Dict[str, int], List[str]]:
+    """Call the extractor model and parse its JSON response.
+
+    Args:
+        input_text: Source text to extract from.
+        base_rows: Existing KB rows for retrieval context.
+        session_id: Optional session id for retrieval caches.
+        kb_revision: Current session KB revision.
+        user_extraction_instruction: Optional user guidance for extraction.
+
+    Returns:
+        Parsed model output, token usage, and retrieval warnings.
+    """
     if ONTOLOGY.load_error:
         raise RuntimeError(f"Failed to load ontology: {ONTOLOGY.load_error}")
 
@@ -337,6 +372,18 @@ def generate_proposal(
     kb_revision: int = 0,
     user_extraction_instruction: Optional[str] = None,
 ) -> Dict[str, Any]:
+    """Generate, validate, and package one extraction proposal.
+
+    Args:
+        input_text: Source text to extract from.
+        base_rows: Existing KB rows for retrieval context.
+        session_id: Optional session id for proposal tracking.
+        kb_revision: Current session KB revision.
+        user_extraction_instruction: Optional user guidance for extraction.
+
+    Returns:
+        A stored proposal record ready for API delivery and approval.
+    """
     started = time.perf_counter()
     cleaned_user_instruction = (user_extraction_instruction or "").strip()
     inferred_source_candidates = source_candidates_for_input(input_text, base_rows, limit=2)
@@ -384,5 +431,4 @@ def generate_proposal(
         inferred_source=inferred_source,
         user_extraction_instruction=cleaned_user_instruction,
     )
-    PROPOSALS[proposal["proposal_id"]] = proposal
     return proposal

@@ -1,42 +1,36 @@
 # Deployment Guide
 
-This project is ready to deploy as a single FastAPI web service. The same server handles:
+ORS Explorer runs as one FastAPI web service. The same server provides the browser UI, API routes, health checks, SQLite session storage, and uploaded JSON files.
 
-- the UI at `/website/pages/start.html`
-- the API at `/api/...`
-- a health check at `/health`
+## What The Server Needs
 
-## Quick option
+- Python 3.11 or Docker
+- Internet access for the OpenAI API
+- An `OPENAI_API_KEY`
+- Writable storage for sessions and uploads
+- A browser to use the UI
 
-If you want the fastest path to a public URL, use Render with the included [render.yaml](./render.yaml).
+The app does not require special hardware. A small Linux server is enough if it can run Python or Docker and make outbound HTTPS requests.
 
-## Before you deploy
+## Important Runtime Files
 
-You need:
+| Setting | Purpose |
+| --- | --- |
+| `APP_DATA_DIR` | Stores SQLite state and uploaded session files. |
+| `ONTOLOGY_FILE` | Server-level ontology loaded at startup. |
+| `DEFAULT_QUERY_FILE` | Optional server-level knowledge graph to start from. |
 
-- a GitHub repo containing this project
-- an `OPENAI_API_KEY`
+Use persistent storage for these paths on a server. If they point to temporary storage, uploaded ontology/query files and session work may be lost after restart.
 
-Important app behavior:
+## Run Locally From The Terminal
 
-- Sessions are stored in server memory, so a restart clears active sessions.
-- `ontology.json` and `query.json` are file-based. In hosted environments, keep them on persistent storage.
-
-## Local Docker test
-
-Build the image:
-
-```bash
-docker build -t ors-explorer .
-```
-
-Run it:
+From the repository root, replace `your_openai_api_key_here` and run:
 
 ```bash
-docker run --rm -p 8000:8000 --env-file .env ors-explorer
+python3 -m venv .venv && source .venv/bin/activate && python -m pip install --upgrade pip && python -m pip install -r requirements.txt && OPENAI_API_KEY="your_openai_api_key_here" python app.py
 ```
 
-Then open:
+Open:
 
 ```text
 http://127.0.0.1:8000/
@@ -48,71 +42,100 @@ Health check:
 http://127.0.0.1:8000/health
 ```
 
-## Render deployment
+## Docker
 
-The included `render.yaml` is set up for a Docker-based web service and persistent storage at `/data`.
-
-### What the Render config does
-
-- deploys this repo as a web service
-- starts the app with Docker
-- exposes `/health` as the health check
-- stores `ontology.json` and `query.json` on a persistent disk at `/data`
-
-### Steps
-
-1. Push this repo to GitHub.
-2. In Render, create a new Blueprint service from the repo.
-3. Render will detect `render.yaml`.
-4. Set the secret `OPENAI_API_KEY` when prompted.
-5. Deploy.
-6. Open the public `onrender.com` URL.
-
-### First deploy note
-
-If `/data/ontology.json` does not exist yet, the app will still boot, but proposal generation will stay blocked until you upload an ontology from the Configure page. This is expected.
-
-### Why `/data`
-
-The app can write uploaded JSON files to the configured paths. Using `/data` avoids mounting a persistent disk over the source tree.
-
-## Manual non-Docker deployment
-
-Any host that can run Python can serve this app. The start command is:
+Build and run:
 
 ```bash
-uvicorn app:app --host 0.0.0.0 --port $PORT
+docker build -t ors-explorer .
+docker run --rm -p 8000:8000 -e OPENAI_API_KEY="your_openai_api_key_here" ors-explorer
 ```
 
-Install dependencies with:
+For persistent Docker storage:
 
 ```bash
-pip install -r requirements.txt
+mkdir -p ./runtime-data
+docker run --rm \
+  -p 8000:8000 \
+  -e OPENAI_API_KEY="your_openai_api_key_here" \
+  -e APP_DATA_DIR=/data \
+  -e ONTOLOGY_FILE=/data/ontology.json \
+  -e DEFAULT_QUERY_FILE=/data/query.json \
+  -v "$(pwd)/runtime-data:/data" \
+  ors-explorer
 ```
 
-Required environment variable:
+If `/data/ontology.json` is missing, the app still starts. Upload an ontology from the Configure page before extracting.
+
+## Manual Linux Server
+
+Install dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Set environment variables:
+
+```bash
+export OPENAI_API_KEY="your_openai_api_key_here"
+export HOST="0.0.0.0"
+export PORT="8000"
+export APP_DATA_DIR="/opt/ors-explorer/data"
+export ONTOLOGY_FILE="/opt/ors-explorer/data/ontology.json"
+export DEFAULT_QUERY_FILE="/opt/ors-explorer/data/query.json"
+```
+
+Start the app:
+
+```bash
+uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+Then open:
 
 ```text
-OPENAI_API_KEY
+http://SERVER_HOSTNAME_OR_IP:8000/
 ```
 
-Recommended environment variables:
+For longer-running use, run the Uvicorn command with a service manager such as systemd, Docker, or the hosting provider's service manager.
+
+## Render
+
+The included `render.yaml` deploys the app as a Docker web service with persistent storage mounted at `/data`.
+
+Steps:
+
+1. Push the repository to GitHub.
+2. Create a Render Blueprint from the repository.
+3. Set the secret `OPENAI_API_KEY`.
+4. Deploy.
+5. Open the Render URL.
+6. Upload an ontology on the Configure page if `/data/ontology.json` does not exist yet.
+
+## After Deployment
+
+Check:
 
 ```text
-HOST=0.0.0.0
-PORT=8000
-ONTOLOGY_FILE=/absolute/or/persistent/path/ontology.json
-DEFAULT_QUERY_FILE=/absolute/or/persistent/path/query.json
+/health
 ```
 
-## Production caveats
+Then test the browser workflow:
 
-- In-memory sessions mean users can lose in-progress work if the service restarts.
-- A persistent disk usually means one instance only for this app shape.
-- CORS is currently wide open. That is convenient for deployment, but if you later split frontend and backend across domains, you may want to lock it down.
+1. Open `/`.
+2. Confirm that an ontology is loaded, or upload `ontology.json`.
+3. Generate a small proposal from the Extract page.
+4. Approve it.
+5. Confirm that the Export page shows JSON and QuickStatements output.
 
-## Useful endpoints
+## Notes And Limitations
 
-- `/`
-- `/health`
-- `/website/pages/start.html`
+- SQLite is intended for one running service instance.
+- Sessions expire after `SESSION_TTL_SECONDS`, which defaults to 7 days.
+- CORS is currently open in `app.py`.
+- The frontend loads Cytoscape from `https://unpkg.com/cytoscape@3.29.2/dist/cytoscape.min.js`.
+- Python dependencies are not pinned to exact versions in `requirements.txt`.

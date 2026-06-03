@@ -26,6 +26,11 @@ REFERENCE_ENTRY_FIELDS = (
 ACCIDENTAL_QUOTE_ESCAPE_RE = re.compile(r'(?<!\\)\\(["\'])')
 
 def empty_ontology_index() -> Dict[str, Any]:
+    """Build an empty ontology index structure.
+
+    Returns:
+        A blank ontology index with the expected keys.
+    """
     return {
         "raw": [],
         "by_entity": {},
@@ -55,6 +60,8 @@ def _compact_entities(rows: List[Dict[str, Any]], limit: int) -> List[Dict[str, 
     } for row in rows[:limit]]
 
 class OntologyStore:
+    """Hold the loaded ontology rows, lookup indexes, and prompt cache."""
+
     def __init__(self) -> None:
         self.rows: List[Dict[str, Any]] = []
         self.index: Dict[str, Any] = empty_ontology_index()
@@ -62,6 +69,14 @@ class OntologyStore:
         self.load_error: Optional[str] = None
 
     def build_index(self, ontology_rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Build lookup tables from ontology export rows.
+
+        Args:
+            ontology_rows: Raw ontology rows from JSON.
+
+        Returns:
+            Indexes used for validation, lookup, and prompt context.
+        """
         # This index is shared by validation, label lookup, and the compact ontology
         # snapshot we pass into prompts, so we build it once when the file loads.
         by_entity: Dict[str, Dict[str, Any]] = {}
@@ -103,6 +118,14 @@ class OntologyStore:
         }
 
     def load(self, ontology_rows: List[Dict[str, Any]]) -> None:
+        """Load ontology rows and refresh cached indexes.
+
+        Args:
+            ontology_rows: Raw ontology rows from JSON.
+
+        Returns:
+            None.
+        """
         self.rows = ontology_rows
         self.index = self.build_index(ontology_rows)
         self.compact_prompt_cache = {
@@ -114,6 +137,14 @@ class OntologyStore:
 ONTOLOGY = OntologyStore()
 
 def is_valid_property_uri(uri: Optional[str]) -> bool:
+    """Check whether a URI belongs to an ontology property.
+
+    Args:
+        uri: Candidate ontology entity URI.
+
+    Returns:
+        True when the URI resolves to a property row.
+    """
     if not uri:
         return False
     row = ONTOLOGY.index["by_entity"].get(uri)
@@ -156,6 +187,14 @@ def _normalize_text_escapes(value: Any) -> Any:
     return ACCIDENTAL_QUOTE_ESCAPE_RE.sub(r"\1", value)
 
 def normalize_statement_strings(row: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize escaped string content within a statement row.
+
+    Args:
+        row: Statement row to normalize.
+
+    Returns:
+        A row copy with cleaned string values and references.
+    """
     normalized: Dict[str, Any] = {}
     for key, value in row.items():
         if key == "references" and isinstance(value, list):
@@ -172,6 +211,14 @@ def normalize_statement_strings(row: Dict[str, Any]) -> Dict[str, Any]:
     return normalized
 
 def clean_reference_entry(entry: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Validate and normalize one reference entry.
+
+    Args:
+        entry: Raw reference object from model or user input.
+
+    Returns:
+        A cleaned reference entry, or `None` when invalid.
+    """
     if entry.get("property") is None or entry.get("value") is None:
         return None
     if not is_valid_property_uri(entry.get("property")):
@@ -182,6 +229,14 @@ def clean_reference_entry(entry: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     return _canonicalize_property_labels(cleaned)
 
 def clean_statement_row(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Validate and normalize one statement row.
+
+    Args:
+        row: Raw statement row from model or user input.
+
+    Returns:
+        A cleaned statement row, or `None` when invalid.
+    """
     # Keep the validation gate intentionally small: require the core triple and a
     # known property, but preserve any optional labels or qualifiers already resolved.
     if row.get("item") is None or row.get("property") is None or row.get("value") is None:
@@ -194,4 +249,9 @@ def clean_statement_row(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     return _canonicalize_property_labels(cleaned)
 
 def compact_ontology_for_prompt() -> Dict[str, Any]:
+    """Return the cached ontology summary used in prompts.
+
+    Returns:
+        The compact ontology payload for extractor prompts.
+    """
     return ONTOLOGY.compact_prompt_cache

@@ -11,6 +11,8 @@ services:
         value: 10000
       - key: OPENAI_API_KEY
         sync: false
+      - key: APP_DATA_DIR
+        value: /data
       - key: ONTOLOGY_FILE
         value: /data/ontology.json
       - key: DEFAULT_QUERY_FILE

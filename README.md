@@ -1,76 +1,147 @@
 # ORS Explorer
 
-ORS Explorer  is a powerful, human-in-the-loop tool designed to help you build and expand your knowledge graphs. It's perfect for extracting structured information from legal or other complex texts and integrating it into Wikibase-style data.
+ORS Explorer is a human-in-the-loop web application for building a Wikibase-style knowledge graph from source text. It was developed as part of a thesis project around Organisational Rule Systems.
 
-**What it does:**
-You provide source text, and ORS Explorer intelligently retrieves relevant existing knowledge from your graph. It then uses an advanced AI model to propose new, ontology-compliant facts (statement rows). You, the user, remain in control: you review these proposals, make any necessary edits, and then approve them. Only approved changes become part of your working knowledge graph. Finally, you can export your new knowledge in a delta-oriented JSON format or as QuickStatements for easy import into Wikibase.
+The application helps a user:
 
-**Your Workflow:**
+1. Load an ontology that defines the available Wikibase items and properties.
+2. Optionally load an existing knowledge graph export.
+3. Paste source text and ask an OpenAI model to propose ontology-compliant statement rows.
+4. Review and edit the proposed JSON before accepting it.
+5. Export the approved session changes as JSON or QuickStatements.
 
-## Typical Workflow
+The model never writes directly to the knowledge graph. Each extraction is a proposal that must be reviewed and approved in the browser.
 
-1.  **Configure:** Start by setting up your session.
-    *   **Ontology:** Upload your `ontology.json` file. This file defines the structure of your knowledge graph (the types of entities and properties you can use). The tool uses this to ensure the AI's proposals are valid.
-    *   **Existing Knowledge (Optional):** You can upload an existing `query.json` file to load your current knowledge graph. This allows you to extend your existing graph rather than starting from scratch. If `user_data_editable/query.json` already exists on the server, new sessions will automatically build upon it.
+## Repository Structure
 
-2.  **Extract:** This is where the magic happens.
-    *   Paste your source text into the input area.
-    *   Optionally, add specific instructions to guide the AI's extraction process.
-    *   Click "Generate Proposal." The AI will analyze your text and propose new facts.
-    *   **Review:** Carefully examine the proposed changes (in JSON format) and the AI's reasoning report. You can edit the proposed JSON directly if needed.
-    *   **Approve:** Once you're satisfied, click "Append Proposal to Knowledge Graph." This adds the approved facts to your session's working graph.
-    *   Repeat this process: extract more facts, review, and approve, building your graph incrementally.
-
-3.  **Export:** Get your new knowledge ready for Wikibase.
-    *   Go to the "Export" page. Here, you'll see a summary of all the new and changed facts from your session.
-    *   **JSON Export:** Download a JSON file containing all added and deleted rows.
-    *   **QuickStatements:** Generate QuickStatements commands. This is the format Wikibase uses for bulk imports.
-        *   **Two-Step Process (if needed):** If the AI proposes entirely new entities that don't yet have Wikibase IDs, the tool will guide you through a two-step QuickStatements process. First, you'll create the new items in Wikibase to get their IDs, then you'll use those IDs to generate the final statements.
-
-## What ORS Explorer Does For You
-
-ORS Explorer is designed for **incremental graph building**, putting you in control at every step. The AI's output is always a **proposal**, never a direct change to your graph. You review and approve each step.
-
-**Key Benefits:**
-
-*   **Ontology-Constrained Extraction:** The AI understands and respects the structure of your knowledge graph, ensuring valid and consistent output.
-*   **Intelligent Context Retrieval:** The tool automatically finds relevant existing information in your graph to help the AI make better proposals and avoid creating duplicate entities.
-*   **Human-in-the-Loop Control:** You always have the final say. Review the AI's proposals, edit them if necessary, and approve only what you want to add.
-*   **Duplicate Avoidance:** The system actively encourages the AI to reuse existing entities from your graph, helping to maintain a clean and consistent knowledge graph.
-*   **Automated Source Linking:** When clear, the tool can automatically link new facts back to their source text.
-*   **Session Management:** Your work is organized into sessions, allowing you to build your graph iteratively.
-*   **Flexible Export:** Easily get your new knowledge in JSON or QuickStatements format for Wikibase.
-
-## How It Works (Simplified)
-
-1.  **Your Session:** When you start, you either begin with an empty graph or load an existing one (your "Base Graph"). As you approve proposals, your graph grows (your "Current Graph"). The tool keeps track of the differences (the "Delta Rows") between your starting graph and your current graph.
-2.  **AI Context:** Before the AI generates proposals, the tool gathers all relevant information from your current graph and the ontology. This includes existing entity names, structured patterns, and related facts. This context helps the AI understand your graph's existing structure and make accurate, non-duplicative suggestions.
-3.  **AI Proposal:** The AI then generates a set of proposed facts and a detailed explanation of its reasoning.
-4.  **Your Approval:** You review these proposals. If you approve, the new facts are added to your session's working graph. This process also helps prevent stale proposals from being applied if your graph has changed since the proposal was generated.
-5.  **Exporting Changes:** When you're ready, the tool generates export files based on the changes you've approved during your session.
-
-## Core Concepts
-
-| Term | Meaning |
+| Path | Purpose |
 | --- | --- |
-| `ontology.json` | Ontology export that defines valid items, properties, and labels |
-| `query.json` | Optional base graph export used to seed or replace the default session base |
-| **Session:** | Your current workspace, where you incrementally build your knowledge graph. |
-| **Base Graph:** | The state of your knowledge graph when you started the session. |
-| **Current Graph:** | The evolving state of your knowledge graph as you approve proposals. |
-| **Delta Rows:** | The net additions you've made to your graph during the session. |
-| **Proposal:** | The AI's suggested changes, awaiting your review and approval. |
-| **Approval:** | Your action to accept the AI's proposed changes and add them to your working graph. |
-| **QuickStatements:** | A special format for importing data into Wikibase. |
-| **Placeholder Subject (`NEW:entity_n`):** | A temporary ID for a brand-new entity proposed by the AI that doesn't yet exist in Wikibase. These require a two-step QuickStatements process. |
+| `app.py` | FastAPI entrypoint. Mounts the static UI, API routes, health routes, and startup storage. |
+| `backend/api.py` | Upload, session, proposal, approval, health, and export endpoints. |
+| `backend/session_store.py` | SQLite-backed storage for sessions, proposals, and uploaded session files. |
+| `backend/state.py` | Knowledge graph row loading, deduplication, session helpers, and delta computation. |
+| `backend/extractor/` | Prompt context retrieval, ontology loading, model call pipeline, validation, and post-processing. |
+| `backend/core/` | Environment config, model defaults, ontology profile, prompt, and ontology-specific policy. |
+| `backend/quickstatements.py` | Conversion from approved rows to QuickStatements output. |
+| `website/pages/` | Browser pages for Configure, Extract, and Export. |
+| `website/js/` | Frontend workflow, API calls, session state, graph rendering, and UI helpers. |
+| `website/css/` | Application styling. |
+| `user_data_editable/ontology.json` | Default ontology loaded at startup unless `ONTOLOGY_FILE` points elsewhere. |
+| `data/` | Runtime SQLite database and uploaded files. This is generated local state and is ignored by Git. |
+| `Dockerfile` | Container image definition for deployment. |
+| `render.yaml` | Render Blueprint configuration with a persistent disk. |
+| `.env.example` | Example environment configuration. |
 
-## Important Notes
+## How The Application Works
 
-*   **Temporary Work:** Your session's work (proposals and graph changes) is stored in the tool's memory. Restarting the tool or uploading a new ontology/query file will clear your current session's progress.
-*   **Server Connection Required:** The tool's user interface must be accessed through the FastAPI server (e.g., `http://127.0.0.1:8000/`), not directly as a local file (`file://`).
-*   **Human Oversight is Key:** While the AI is powerful and constrained, your review and approval are always essential to ensure the accuracy and quality of your knowledge graph.
-*   **Deletion Export:** If you delete rows, they will be included in the JSON export but not in the QuickStatements output (as QuickStatements is primarily for adding/modifying, not deleting).
+The service is a single FastAPI application. It serves the UI and API from the same process:
 
-## Deployment
+- `/` redirects to `/website/pages/start.html`
+- `/website/...` serves the browser UI
+- `/api/...` serves JSON API routes
+- `/health` and `/api/health` report configuration and ontology status
 
-Deployment files are included for Docker and Render. See [DEPLOYMENT.md](./DEPLOYMENT.md) for setup steps.
+The normal workflow is:
+
+1. Configure the session on the start page.
+2. Upload `ontology.json` if the server does not already have one.
+3. Optionally upload `query.json` to start from an existing knowledge graph.
+4. Go to Extract, paste source text, and generate a proposal.
+5. Review the proposed rows and reasoning report.
+6. Approve the proposal to append it to the session knowledge graph.
+7. Repeat extraction as needed.
+8. Go to Export and copy or save the JSON/QuickStatements output.
+
+## Required Inputs
+
+### Ontology JSON
+
+`ontology.json` must be a JSON array. The included Configure page contains a SPARQL query template for exporting ontology items and properties from a Wikibase instance.
+
+The backend validates the uploaded ontology against the ontology profile in `backend/core/ontology_profile.py`. If the profile and ontology do not match, proposal generation is blocked until the mismatch is fixed.
+
+### Knowledge Graph JSON
+
+`query.json` is optional. It must also be a JSON array. If present, the session starts from those existing rows and exports only the net changes approved during the session.
+
+If no knowledge graph is uploaded and no `DEFAULT_QUERY_FILE` exists, ORS Explorer starts from an empty graph.
+
+## Install Locally
+
+Use one terminal command from the repository root. Replace `your_openai_api_key_here` with a valid OpenAI API key.
+
+The `.venv/` folder is local only and is not uploaded to Git. This command recreates it on the machine where the project is being run.
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate && python -m pip install --upgrade pip && python -m pip install -r requirements.txt && OPENAI_API_KEY="your_openai_api_key_here" python app.py
+```
+
+This creates `.venv/`, installs dependencies, sets the API key for the current server process, and starts ORS Explorer on port `8000`.
+
+## Run Locally From The Terminal
+
+After the command is running, open the UI:
+
+```text
+http://127.0.0.1:8000/
+```
+
+Check the backend status:
+
+```text
+http://127.0.0.1:8000/health
+```
+
+Do not open the HTML files directly with `file://`. Uploads, extraction, session loading, and export require the FastAPI server.
+
+## Configuration
+
+The main environment variables are:
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `OPENAI_API_KEY` | none | Required for proposal generation and embeddings. |
+| `HOST` | `0.0.0.0` | Host address used by `python app.py`. |
+| `PORT` | `8000` | Port used by `python app.py` and most manual deployments. |
+| `APP_DATA_DIR` | `data` | Directory for SQLite state and uploaded session files. |
+| `SESSION_TTL_SECONDS` | `604800` | Session lifetime. Default is 7 days. |
+| `ONTOLOGY_FILE` | `user_data_editable/ontology.json` | Server-level ontology loaded at startup. |
+| `DEFAULT_QUERY_FILE` | `user_data_editable/query.json` | Optional server-level base graph. |
+| `ALLOW_DELETE` | `false` | Enables delete behavior where supported by the backend. |
+| `EXTRACTOR_MODEL` | value in `backend/core/tuning.py` | OpenAI model used for proposal generation. |
+| `EMBEDDING_MODEL` | value in `backend/core/tuning.py` | OpenAI model used for semantic retrieval. |
+
+Additional retrieval and row-budget settings are documented in `backend/core/tuning.py`.
+
+
+## Deployment Overview
+
+The app can be deployed in three practical ways:
+
+- Local terminal run with Python and Uvicorn.
+- Docker container using the included `Dockerfile`.
+- Render Blueprint using the included `render.yaml`.
+
+For server deployment, configure persistent storage for:
+
+- `APP_DATA_DIR`
+- `ONTOLOGY_FILE`
+- `DEFAULT_QUERY_FILE`, if a server-level base graph is required
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for local Docker, Render, and manual Linux server instructions.
+
+## Known Assumptions And Limitations
+
+- The server needs outbound internet access to call the OpenAI API.
+- The browser currently loads Cytoscape from `https://unpkg.com`. If the deployment must work fully offline or behind a strict firewall, vendor that JavaScript file locally and update the HTML script tags.
+- Dependencies in `requirements.txt` are not pinned to exact versions. For strict reproducibility, freeze known-good versions after testing on the target server.
+- SQLite storage is intended for a single service instance. Do not run multiple replicas against the same SQLite files.
+- Sessions expire after `SESSION_TTL_SECONDS`. Increase this value or export work promptly for long reviews.
+- Deletions appear in the JSON export as `deleted_rows`; QuickStatements output is focused on additions and modifications.
+- New entities use placeholders such as `NEW:entity_1`. The Export page may require a two-step QuickStatements process: create new items first, enter the assigned Q-IDs, then generate the mapped statements.
+- The ontology profile is tailored to the current Organisational Rule Systems ontology. A different ontology may require changes in `backend/core/ontology_profile.py`.
+
+## Related Documentation
+
+- [DEPLOYMENT.md](./DEPLOYMENT.md): server, Docker, Render, and local deployment instructions.
+- [MAINTAIN.md](./MAINTAIN.md): architecture, request flow, state model, and maintenance checklist.

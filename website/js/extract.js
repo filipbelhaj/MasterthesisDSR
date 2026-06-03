@@ -546,7 +546,7 @@
 
   clearSessionBtn.addEventListener("click", () => {
     resetSessionUi(
-      "Local browser session cleared. Server-side session may still exist until restart.",
+      "Local browser session cleared. Server-side session remains until it expires.",
       "warn",
       "Session cleared"
     );

@@ -56,8 +56,8 @@
             <h2>Upload Ontology</h2>
             <p>Upload your Wikibase ontology file here if the server does not already have one loaded. It will be saved as the configured ontology file.</p>
             <div class="ontology-guide">
-              <p>Copy the SPARQL query below, run it on your Wikibase, export the result as JSON, and upload it here.</p>
-              <p><strong>Note:</strong> replace <span class="mono">Q10</span> with the Q-id of your class entity (this is commented in the query). If the server does not already have <span class="mono">ontology.json</span>, upload one here before extracting.</p>
+              <p>Copy the SPARQL query below, update the Wikibase URL prefixes for your instance, run it on your Wikibase, export the result as JSON, and upload it here.</p>
+              <p><strong>Note:</strong> replace <span class="mono">Q10</span> with the Q-id of your class entity and <span class="mono">P1</span> with the property used to link ontology items to that class. If the server does not already have <span class="mono">ontology.json</span>, upload one here before extracting.</p>
               <div class="sparql-box-wrap">
                 <div class="panel-title-row sparql-box-head">
                   <span class="sparql-box-label">SPARQL Query</span>
@@ -66,15 +66,15 @@
                     <button class="secondary sparql-copy-btn" type="button" data-copy-target="ontologySparql" data-copy-reset-ms="2200">Copy</button>
                   </div>
                 </div>
-                <textarea id="ontologySparql" class="sparql-box" readonly spellcheck="false">PREFIX wd: &lt;https://organisational-rules.wikibase.cloud/entity/&gt;
-PREFIX wdt: &lt;https://organisational-rules.wikibase.cloud/prop/direct/&gt;
+                <textarea id="ontologySparql" class="sparql-box" readonly spellcheck="false">PREFIX wd: &lt;https://your-wikibase.example/entity/&gt;
+PREFIX wdt: &lt;https://your-wikibase.example/prop/direct/&gt;
 PREFIX wikibase: &lt;http://wikiba.se/ontology#&gt;
 PREFIX bd: &lt;http://www.bigdata.com/rdf#&gt;
 
 SELECT ?entityType ?entity ?entityLabel ?entityDescription ?entityAltLabel
 WHERE {
   {
-    # Make sure you rename Q10 to whatever Q your class entity is!!!
+    # Replace P1 and Q10 with the property and class Q-id used by your ontology.
     ?entity wdt:P1 wd:Q10 .
     BIND("item" AS ?entityType)
   }
@@ -92,7 +92,10 @@ ORDER BY ?entityType ?entityLabel</textarea>
               </div>
             </div>
             <input id="ontologyFile" type="file" accept=".json,application/json" />
-            <button id="uploadOntologyBtn" type="button">Upload Ontology</button>
+            <div class="toolbar-row">
+              <button id="uploadOntologyBtn" type="button">Upload Ontology</button>
+              <button id="removeOntologyBtn" class="secondary" type="button" disabled>Remove Ontology</button>
+            </div>
             <p id="ontologyStatus" class="upload-status"></p>
         </article>
 
@@ -101,7 +104,7 @@ ORDER BY ?entityType ?entityLabel</textarea>
             <p>Upload your own Wikibase export to continue building on an existing knowledge graph.</p>
             <div class="ontology-guide">
               <p>If left empty, ORS Explorer will create a new knowledge graph. If you upload an existing knowledge base export, ORS Explorer will continue building on it.</p>
-              <p>Use the SPARQL query below to extract your full Wikibase as JSON, then upload the exported file here.</p>
+              <p>Use the SPARQL query below to extract your full Wikibase as JSON, updating the prefixes for your instance before running it.</p>
               <div class="sparql-box-wrap">
                 <div class="panel-title-row sparql-box-head">
                   <span class="sparql-box-label">SPARQL Query</span>
@@ -110,10 +113,10 @@ ORDER BY ?entityType ?entityLabel</textarea>
                     <button class="secondary sparql-copy-btn" type="button" data-copy-target="querySparql" data-copy-reset-ms="2200">Copy</button>
                   </div>
                 </div>
-                <textarea id="querySparql" class="sparql-box" readonly spellcheck="false">PREFIX wd: &lt;https://organisational-rules.wikibase.cloud/entity/&gt;
-PREFIX p:  &lt;https://organisational-rules.wikibase.cloud/prop/&gt;
-PREFIX ps: &lt;https://organisational-rules.wikibase.cloud/prop/statement/&gt;
-PREFIX pq: &lt;https://organisational-rules.wikibase.cloud/prop/qualifier/&gt;
+                <textarea id="querySparql" class="sparql-box" readonly spellcheck="false">PREFIX wd: &lt;https://your-wikibase.example/entity/&gt;
+PREFIX p:  &lt;https://your-wikibase.example/prop/&gt;
+PREFIX ps: &lt;https://your-wikibase.example/prop/statement/&gt;
+PREFIX pq: &lt;https://your-wikibase.example/prop/qualifier/&gt;
 PREFIX wikibase: &lt;http://wikiba.se/ontology#&gt;
 PREFIX bd: &lt;http://www.bigdata.com/rdf#&gt;
 
@@ -154,7 +157,10 @@ WHERE {
               </div>
             </div>
             <input id="queryFile" type="file" accept=".json,application/json" />
-            <button id="uploadQueryBtn" type="button">Upload Knowledge Graph</button>
+            <div class="toolbar-row">
+              <button id="uploadQueryBtn" type="button">Upload Knowledge Graph</button>
+              <button id="removeQueryBtn" class="secondary" type="button" disabled>Remove Knowledge Graph</button>
+            </div>
             <p id="queryStatus" class="upload-status"></p>
         </article>
         </div>
@@ -163,6 +169,6 @@ WHERE {
   </main>
   <script src="../js/ui.js?v=20260329-1"></script>
   <script src="../js/shared.js?v=20260329-1"></script>
-  <script src="../js/start.js?v=20260329-7"></script>
+  <script src="../js/start.js?v=20260329-8"></script>
 </body>
 </html>
